@@ -16,3 +16,10 @@ class Rarity(Enum):
     COMMON = 2
     UNCOMMON = 3
     RARE = 4
+
+MAX_HEALTH = {
+    Character.IRON_CLAD: 80,
+    Character.SILENT: 70,
+    Character.DEFECT: 75,
+    Character.WATCHER: 72,
+}

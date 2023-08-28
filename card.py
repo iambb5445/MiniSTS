@@ -1,5 +1,5 @@
 from config import CardType, Character, Rarity
-from value import Value, ConstValue, Upgradable, LinearUpgradable
+from value import Value, ConstValue, UpgradableOnce, LinearUpgradable
 
 class CardAction:
     def __init__(self):
@@ -32,8 +32,8 @@ class Card:
             action.play()
 
 CARDS = [
-    Card("Strike", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(Upgradable(6, 9))),
-    Card("Defend", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, GainBlock(Upgradable(5, 8))),
+    Card("Strike", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(6, 9))),
+    Card("Defend", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, GainBlock(UpgradableOnce(5, 8))),
     Card("Searing Blow", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.UNCOMMON, DealDamage(LinearUpgradable(12, 4))),
 ]
 
