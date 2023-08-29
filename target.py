@@ -1,6 +1,10 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from card import Card
+    from creature import Creature
+
 from enum import Enum
-from creature import Creature
-from card import Card
 
 class CreatureSet(Enum):
         ENEMY = 1
@@ -11,6 +15,9 @@ class CreatureTarget:
         raise NotImplementedError("The \"get\" method is not implemented for this CreateTarget.")
 
 class SelfCreature(CreatureTarget):
+    pass
+
+class PlayerCreature(CreatureTarget):
     pass
 
 class ChooseCreature(CreatureTarget):

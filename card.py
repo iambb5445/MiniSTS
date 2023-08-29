@@ -1,7 +1,7 @@
+from target import CreatureSet, ChooseCreature
+from action import Action, DealDamage, GainBlock
 from config import CardType, Character, Rarity
 from value import Value, ConstValue, UpgradableOnce, LinearUpgradable
-from action import Action, DealDamage, GainBlock
-from target import CreatureSet, ChooseCreature
 
 class Card:
     def __init__(self, name: str, card_type: CardType, mana_cost: Value, character: Character, rarity: Rarity, *actions: Action):

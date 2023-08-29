@@ -1,7 +1,12 @@
-from card import CARDS
+from game import GameState
+from battle import BattleState
+from config import Character
+from creature import AcidSlimeSmall
 
 def main():
-    print(CARDS[0])
+    game_state = GameState(Character.IRON_CLAD, 0)
+    battle_state = BattleState(game_state, AcidSlimeSmall(game_state))
+    print(battle_state)
 
 if __name__ == '__main__':
     main()
