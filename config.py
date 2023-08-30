@@ -2,6 +2,7 @@ from enum import Enum
 
 class StatusEffect(Enum):
     VULNERABLE = 1
+    WEAK = 2
 
 class Character(Enum):
     IRON_CLAD = 1

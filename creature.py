@@ -2,7 +2,7 @@ from __future__ import annotations
 from config import Character, MAX_HEALTH
 from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet
-from action import Action, DealDamage
+from action import Action, DealDamage, PlayCard, ApplyStatus
 from target import PlayerCreature
 from config import StatusEffect
 from typing import TYPE_CHECKING
@@ -26,7 +26,7 @@ class Player(Creature):
         super().__init__(MAX_HEALTH[self.character])
     
     def get_action(self, game_state: GameState, battle_state: BattleState):
-        return DealDamage(ConstValue(2)).To(PlayerCreature())
+        return PlayCard(0)
 
 class Enemy(Creature):
     def __init__(self, max_health: int):
@@ -36,10 +36,16 @@ class AcidSlimeSmall(Enemy):
     def __init__(self, game_state: GameState):
         max_health_gen = RandomUniformRange(8, 12) if game_state.ascention < 7 else RandomUniformRange(9, 13)
         super().__init__(max_health_gen.get())
-        self.action_set: ItemSet[Action] = \
-            RoundRobinRandomStart(DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerCreature())) \
-            if game_state.ascention < 17 else \
-            RoundRobin(0, DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerCreature()))
+        if game_state.ascention < 17:
+            self.action_set: ItemSet[Action] = RoundRobinRandomStart(
+                DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerCreature()),
+                ApplyStatus(ConstValue(1), StatusEffect.WEAK).To(PlayerCreature())
+            )
+        else:
+            self.action_set: ItemSet[Action] = RoundRobin(0,
+                DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerCreature()),
+                ApplyStatus(ConstValue(1), StatusEffect.WEAK).To(PlayerCreature())
+            )
     
     def get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
         return self.action_set.get()
