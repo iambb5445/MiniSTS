@@ -4,6 +4,7 @@ from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet
 from action import Action, DealDamage
 from target import PlayerCreature
+from config import StatusEffect
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from battle import BattleState
@@ -13,14 +14,19 @@ class Creature:
     def __init__(self, max_health: int):
         self.max_health = max_health
         self.health = max_health
+        self.block = 0
+        self.status_effects:dict[StatusEffect, int] = {}
 
-    def get_action(self, game_state: 'GameState', battle_state: BattleState) -> Action:
+    def get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
         raise NotImplementedError("The \"get_action\" method is not implemented for this Creature.")
 
 class Player(Creature):
     def __init__(self, character: Character):
         self.character = character
         super().__init__(MAX_HEALTH[self.character])
+    
+    def get_action(self, game_state: GameState, battle_state: BattleState):
+        return DealDamage(ConstValue(2)).To(PlayerCreature())
 
 class Enemy(Creature):
     def __init__(self, max_health: int):
@@ -31,9 +37,9 @@ class AcidSlimeSmall(Enemy):
         max_health_gen = RandomUniformRange(8, 12) if game_state.ascention < 7 else RandomUniformRange(9, 13)
         super().__init__(max_health_gen.get())
         self.action_set: ItemSet[Action] = \
-            RoundRobinRandomStart(DealDamage(ConstValue(3 if game_state.ascention < 2 else 4), PlayerCreature())) \
+            RoundRobinRandomStart(DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerCreature())) \
             if game_state.ascention < 17 else \
-            RoundRobin(0, DealDamage(ConstValue(3 if game_state.ascention < 2 else 4), PlayerCreature()))
+            RoundRobin(0, DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerCreature()))
     
     def get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
         return self.action_set.get()
