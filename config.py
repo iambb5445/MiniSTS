@@ -1,8 +1,10 @@
 from enum import Enum
 
+MAX_BLOCK = 999
+
 class StatusEffect(Enum):
-    VULNERABLE = 1
-    WEAK = 2
+    VULNERABLE = "Vulnerable"
+    WEAK = "Weak"
 
 class Character(Enum):
     IRON_CLAD = 1
@@ -21,9 +23,16 @@ class Rarity(Enum):
     UNCOMMON = 3
     RARE = 4
 
-MAX_HEALTH = {
+MAX_HEALTH: dict[Character, int] = {
     Character.IRON_CLAD: 80,
     Character.SILENT: 70,
     Character.DEFECT: 75,
     Character.WATCHER: 72,
+}
+
+CHARACTER_NAME: dict[Character, str] = {
+    Character.IRON_CLAD: "IronClad",
+    Character.SILENT: "Silent",
+    Character.DEFECT: "Defect",
+    Character.WATCHER: "Watcher",
 }

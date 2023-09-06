@@ -1,5 +1,7 @@
 import random
 
+# Question: do we want to differentiate between CardValue and regular Value? Since only card value should be upgradable!
+
 class Value():
     def __init__(self):
         pass
@@ -10,6 +12,9 @@ class Value():
 class ConstValue(Value):
     def __init__(self, val: int):
         self.val = val
+    
+    def get(self):
+        return self.val
 
 class Upgradable(Value):
     def __init__(self):

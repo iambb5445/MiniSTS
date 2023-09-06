@@ -1,55 +1,80 @@
 from __future__ import annotations
+from utility import UserInput
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from card import Card
-    from creature import Creature
+    from agent import Agent
+    from battle import BattleState
 
 from enum import Enum
 
-class CreatureSet(Enum):
+class AgentSet(Enum):
         ENEMY = 1
         ALL = 2
 
-class CreatureTarget:
-    def get(self) -> Creature:
-        raise NotImplementedError("The \"get\" method is not implemented for this CreateTarget.")
+def get_agent_set_data(agent_set: AgentSet, battle_state: BattleState) -> tuple[str, list[Agent]]:
+    if agent_set == AgentSet.ENEMY:
+        agent_list: list[Agent] = [enemy for enemy in battle_state.enemies]
+        return "enemies", agent_list
+    elif agent_set == AgentSet.ALL:
+        agent_list: list[Agent] = [battle_state.player]
+        agent_list += [enemy for enemy in battle_state.enemies]
+        return "all agents", agent_list
+    else:
+        raise Exception("AgentSet {} not recognized.".format(AgentSet))
 
-class SelfCreature(CreatureTarget):
+class AgentTarget:
+    def get(self, battle_state: BattleState) -> Agent:
+        raise NotImplementedError("The \"get\" method is not implemented for this AgentTarget.")
+'''
+class SelfAgentTarget(AgentTarget):
     pass
+'''
+class PlayerAgentTarget(AgentTarget):
+    def get(self, battle_state: BattleState) -> Agent:
+        return battle_state.player
 
-class PlayerCreature(CreatureTarget):
-    pass
-
-class ChooseCreature(CreatureTarget):
-    def __init__(self, among: CreatureSet, count: int = 1):
+class ChooseAgentTarget(AgentTarget):
+    def __init__(self, among: AgentSet, count: int = 1):
+        self.among = among
+        self.count = count
+    
+    def get(self, battle_state: BattleState) -> Agent:
+        name, agent_list = get_agent_set_data(self.among, battle_state)
+        index = UserInput.ask_for_number(
+            "enter index among {} indices in (0-{}]: ".format(name, len(agent_list)),
+            lambda val: val >= 0 or val < len(agent_list)
+        )
+        return agent_list[index]
+        
+'''
+class RandomAgentTarget(AgentTarget):
+    def __init__(self, among: AgentSet, count: int = 1):
         self.among = among
         self.count = count
 
-class RandomCreature(CreatureTarget):
-    def __init__(self, among: CreatureSet, count: int = 1):
+class AllAgentsTarget(AgentTarget):
+    def __init__(self, among: AgentSet):
         self.among = among
-        self.count = count
-
-class AllCreature(CreatureTarget):
-    def __init__(self, among: CreatureSet):
-        self.among = among
-
+'''
+        
 class CardPile(Enum):
     HAND = 1
     DISCARD = 2
 
 class CardTarget:
-    def get(self) -> Card:
+    def get(self, battle_state: BattleState) -> Card:
         raise NotImplementedError("The \"get\" method is not implemented for this CreateTarget.")
-
-class SelfCard(CardTarget):
+'''
+class SelfCardTarget(CardTarget):
     pass
 
-class ChooseCard(CardTarget):
+class ChooseCardTarget(CardTarget):
     def __init__(self, among: CardPile, count: int = 1):
         self.among = among
         self.count = count
 
-class AllCard(CardTarget):
+class AllCardsTarget(CardTarget):
     def __init__(self, among: CardPile):
         self.among = among
+'''
