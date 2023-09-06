@@ -82,6 +82,9 @@ class CardPile(Enum):
 class CardTarget:
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:
         raise NotImplementedError("The \"get\" method is not implemented for this CreateTarget.")
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__
     
 class SelfCardTarget(CardTarget):
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:

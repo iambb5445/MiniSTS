@@ -21,7 +21,7 @@ class CardTargetedAction(Action):
         self.targeted.play_many(by, game_state, battle_state, self.target.get(self.by, battle_state))
     
     def __repr__(self) -> str:
-        return self.targeted.__repr__() + " to " + self.target.__repr__()
+        return self.targeted.__repr__()# + " by " + self.by.name
 
 class CardTargetedL1:
     def __init__(self, card_targeted: CardTargetedL2, target: CardTarget, *values: Value) -> None:
@@ -34,6 +34,9 @@ class CardTargetedL1:
     
     def play_many(self, by: Agent, game_state: GameState, battle_state: BattleState, targets: list[Card]) -> None:
         self.card_targetd.play_many(by, game_state, battle_state, targets)
+    
+    def __repr__(self) -> str:
+        return self.card_targetd.__repr__() + " to " + self.target.__repr__()
 
 class CardTargetedL2:
     def __init__(self, *values: Value) -> None:

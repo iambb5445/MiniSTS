@@ -34,7 +34,7 @@ class PlayCard(Action):
 
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
         assert self.card_index < len(battle_state.hand) and self.card_index >= 0, "Card index {} out of range for hand {}".format(self.card_index, battle_state.hand)
-        print('Playing {}'.format(battle_state.hand[self.card_index].name))
+        print('Playing:\n{}'.format(battle_state.hand[self.card_index]))
         assert battle_state.is_playable(battle_state.hand[self.card_index])
         battle_state.hand[self.card_index].play(game_state, battle_state)
         battle_state.discard(self.card_index)

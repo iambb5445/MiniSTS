@@ -29,6 +29,10 @@ class Card:
         self.mana_action.play(game_state.player, game_state, battle_state)
         for action in self.actions:
             action.play(game_state.player, game_state, battle_state)
+    
+    def __repr__(self) -> str:
+        return "-{}-cost:{}-{}-{}-{}\n-".format(self.name, self.mana_cost, self.card_type, self.rarity, self.character) + \
+            "\n-".join([action.__repr__() for action in self.actions])
 
 class CardGen:
     Strike = lambda: Card("Strike", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(6, 9)).To(ChooseAgentTarget(AgentSet.ENEMY)))

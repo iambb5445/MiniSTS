@@ -51,7 +51,7 @@ class AndAgentTargeted(AgentTargeted):
             targeted.play(by, game_state, battle_state, target)
     
     def __repr__(self) -> str:
-        return ' and '.join(*[targeted.__repr__() for targeted in self.targeted_set])
+        return ' and '.join([targeted.__repr__() for targeted in self.targeted_set])
 
 class DealDamage(AgentTargeted):
     def __init__(self, val: Value):
