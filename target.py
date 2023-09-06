@@ -46,8 +46,8 @@ class ChooseAgentTarget(AgentTarget):
     def get(self, performer: Agent, battle_state: BattleState) -> Agent:
         name, agent_list = get_agent_set_data(self.among, battle_state)
         index = UserInput.ask_for_number(
-            "enter index among {} indices in (0-{}]: ".format(name, len(agent_list)),
-            lambda val: val >= 0 or val < len(agent_list)
+            "Enter index among {} indices in (0-{}]: ".format(name, len(agent_list)),
+            lambda val: val >= 0 and val < len(agent_list)
         )
         return agent_list[index]
         
