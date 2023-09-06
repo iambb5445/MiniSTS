@@ -94,11 +94,9 @@ class AddCopy(CardTargetedL2):
         else:
             raise Exception("Unrecognized CardPile to add a copy to")
 
-'''
-class AddCopy(CardTargeted):
-    def __init__(self, card_target: CardTarget):
+class UpgradeCard(CardTargetedL2):
+    def __init__(self):
         super().__init__()
-        self.card_target = card_target
-    
+
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Card) -> None:
-        pass'''
+        target.upgrade()

@@ -56,14 +56,7 @@ class AllAgentsTarget(AgentTarget):
         self.among = among
     
     def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
-        agent_list: list[Agent] = []
-        if self.among == AgentSet.ALL:
-            agent_list += [battle_state.player]
-            agent_list += battle_state.enemies
-        elif self.among == AgentSet.ENEMY:
-            agent_list += battle_state.enemies
-        else:
-            raise Exception("Unrecognized AgentSet {}".format(self.among))
+        _, agent_list = get_agent_set_data(self.among, battle_state)
         return agent_list
 
 '''
@@ -77,7 +70,23 @@ class CardPile(Enum):
     HAND = 1
     DISCARD = 2
     DRAW = 3
-    EXHAUST = 3
+    EXHAUST = 4
+
+def get_card_pile_data(card_pile: CardPile, battle_state: BattleState) -> tuple[str, list[Card]]:
+    if card_pile == CardPile.HAND:
+        card_list: list[Card] = [card for card in battle_state.hand]
+        return "hand", card_list
+    elif card_pile == CardPile.DISCARD:
+        card_list: list[Card] = [card for card in battle_state.discard_pile]
+        return "discard", card_list
+    elif card_pile == CardPile.DRAW:
+        card_list: list[Card] = [card for card in battle_state.draw_pile]
+        return "draw", card_list
+    elif card_pile == CardPile.EXHAUST:
+        card_list: list[Card] = [card for card in battle_state.exhause_pile]
+        return "exhaust", card_list
+    else:
+        raise Exception("AgentSet {} not recognized.".format(AgentSet))
 
 class CardTarget:
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:
@@ -94,6 +103,15 @@ class ChooseCardTarget(CardTarget):
     def __init__(self, among: CardPile, count: int = 1):
         self.among = among
         self.count = count
+    
+    def get(self, by: Card, battle_state: BattleState) -> list[Card]:
+        name, card_list = get_card_pile_data(self.among, battle_state)
+        index = UserInput.ask_for_number(
+            "Enter index among {} indices in (0-{}]: ".format(name, len(card_list)),
+            lambda val: val >= 0 and val < len(card_list)
+        )
+        return [card_list[index]]
+    
 '''
 class SelfCardTarget(CardTarget):
     pass

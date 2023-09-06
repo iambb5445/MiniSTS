@@ -13,6 +13,9 @@ class Value():
     def negative(self) -> Value:
         raise NotImplementedError("The \"negative\" method is not defined for {}.".format(self.__class__.__name__))
     
+    def upgrade(self, times: int) -> None:
+        pass
+    
     def __repr__(self) -> str:
         return str(self.peek())
     

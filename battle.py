@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from agent import Enemy
@@ -20,7 +21,7 @@ class BattleState:
         self.player_turn_ended = False
 
     def _start(self):
-        self.draw_pile: list[Card] = [card for card in self.game_state.deck]
+        self.draw_pile: list[Card] = [copy.deepcopy(card) for card in self.game_state.deck]
         random.shuffle(self.draw_pile)
         self.discard_pile: list[Card] = []
         self.hand: list[Card] = []
@@ -40,8 +41,8 @@ class BattleState:
         if len(self.draw_pile) > 0:
             self.hand.append(self.draw_pile.pop())
         else:
-            pass
             #discard+draw+hand is empty
+            pass
 
     def draw(self, count: int):
         for _ in range(count):
