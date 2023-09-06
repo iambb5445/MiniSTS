@@ -1,6 +1,8 @@
 from __future__ import annotations
-from target import AgentSet, ChooseAgentTarget, SelfAgentTarget, AllAgentsTarget
-from action import Action, DealDamage, ApplyStatus, AddBlock, AddMana
+from target import AgentSet, ChooseAgentTarget, SelfAgentTarget, AllAgentsTarget, SelfCardTarget
+from action.action import Action, AddMana
+from action.agent_targeted_action import DealDamage, ApplyStatus, AddBlock
+from action.card_targeted_action import Exhaust, CardTargetedL1
 from config import CardType, Character, Rarity, StatusEffect
 from value import Value, ConstValue, UpgradableOnce, LinearUpgradable
 from typing import TYPE_CHECKING
@@ -9,7 +11,7 @@ if TYPE_CHECKING:
     from battle import BattleState
 
 class Card:
-    def __init__(self, name: str, card_type: CardType, mana_cost: Value, character: Character, rarity: Rarity, *actions: Action):
+    def __init__(self, name: str, card_type: CardType, mana_cost: Value, character: Character, rarity: Rarity, *actions: Action|CardTargetedL1):
         self.name = name
         self.card_type = card_type
         self.mana_cost = mana_cost
@@ -18,7 +20,10 @@ class Card:
         self.mana_action = AddMana(mana_cost.negative())
         self.actions: list[Action] = []
         for action in actions:
-            self.actions.append(action)
+            if isinstance(action, Action):
+                self.actions.append(action)
+            else:
+                self.actions.append(action.By(self))
     
     def play(self, game_state: GameState, battle_state: BattleState):
         self.mana_action.play(game_state.player, game_state, battle_state)
@@ -31,6 +36,7 @@ class CardGen:
     Searing_Blow = lambda: Card("SearingBlow", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.UNCOMMON, DealDamage(LinearUpgradable(12, 4)).To(ChooseAgentTarget(AgentSet.ENEMY)))
     Bash = lambda: Card("Bash", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(8, 10)).And(ApplyStatus(UpgradableOnce(2, 3), StatusEffect.VULNERABLE)).To(ChooseAgentTarget(AgentSet.ENEMY)))
     CLEAVE = lambda: Card("Cleave", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealDamage(UpgradableOnce(8, 11)).To(AllAgentsTarget(AgentSet.ENEMY)))
+    IMPERVIOUS = lambda: Card("Impervious", CardType.SKILL, ConstValue(2), Character.IRON_CLAD, Rarity.RARE, AddBlock(UpgradableOnce(30, 40)).To(SelfAgentTarget()), Exhaust().To(SelfCardTarget()))
 
 class CardRepo:
     @staticmethod

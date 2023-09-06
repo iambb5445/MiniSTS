@@ -2,7 +2,8 @@ from __future__ import annotations
 from config import Character, MAX_HEALTH
 from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet
-from action import Action, DealDamage, PlayCard, ApplyStatus, NoAction
+from action.action import Action, PlayCard, NoAction
+from action.agent_targeted_action import DealDamage, ApplyStatus
 from target import PlayerAgentTarget
 from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
 from utility import UserInput
@@ -34,8 +35,10 @@ class Agent:
         if self.health <= 0:
             self.health = 0
     
-    def clear(self):
+    def clear_block(self):
         self.block = 0
+        
+    def clear_status(self):
         for key in self.status_effects:
             self.status_effects[key] = END_TURN_BEHAVIOR[key](self.status_effects[key])
 

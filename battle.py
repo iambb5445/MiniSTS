@@ -4,7 +4,7 @@ if TYPE_CHECKING:
     from agent import Enemy
     from game import GameState
     from card import Card
-    from action import Action
+    from action.action import Action
 from config import MAX_MANA
 
 import random
@@ -24,6 +24,7 @@ class BattleState:
         random.shuffle(self.draw_pile)
         self.discard_pile: list[Card] = []
         self.hand: list[Card] = []
+        self.exhause_pile: list[Card] = []
 
     def discard_hand(self):
         self.discard_pile += self.hand
@@ -58,6 +59,15 @@ class BattleState:
         discarded = self.hand.pop(card_index)
         self.discard_pile.append(discarded)
     
+    def exhaust(self, card: Card):
+        if card in self.hand:
+            self.hand.remove(card)
+        if card in self.draw_pile:
+            self.draw_pile.remove(card)
+        if card in self.discard_pile:
+            self.discard_pile.remove(card)
+        self.exhause_pile.append(card)
+    
     def visualize(self):
         print("*Turn {}*".format(self.turn))
         print("mana: {}/{}".format(self.mana, self.game_state.max_mana))
@@ -65,7 +75,10 @@ class BattleState:
         for i, enemy in enumerate(self.enemies):
             intention: Action = enemy.get_intention(self.game_state, self)
             print('{}:{}---{}'.format(i, enemy, intention))
-        print("discard pile: ", end=' ')
+        print("exhaust pile: ", end=' ')
+        for i, card in enumerate(self.exhause_pile):
+            print('{}:{}'.format(i, card.name), end=' ')
+        print("\ndiscard pile: ", end=' ')
         for i, card in enumerate(self.discard_pile):
             print('{}:{}'.format(i, card.name), end=' ')
         print("\ndraw pile: ", end=' ')
@@ -96,18 +109,22 @@ class BattleState:
         while not self.player_turn_ended:
             self.visualize()
             self.player.play(self.game_state, self)
-            self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
+            self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
             if self.get_end_result() != 0:
                 return
+        self.player.clear_status()
+        for enemy in self.enemies:
+            enemy.clear_block()
         self.discard_hand()
-        self.player.clear()
         for enemy in self.enemies:
             if not enemy.is_dead():
                 self.visualize()
                 enemy.play(self.game_state, self)
-                enemy.clear()
                 if self.get_end_result() != 0:
                     return
+        self.player.clear_block()
+        for enemy in self.enemies:
+            enemy.clear_status()
         self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
         
     def get_end_result(self):

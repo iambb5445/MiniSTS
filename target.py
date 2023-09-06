@@ -78,16 +78,20 @@ class CardPile(Enum):
     DISCARD = 2
 
 class CardTarget:
-    def get(self, battle_state: BattleState) -> Card:
+    def get(self, by: Card, battle_state: BattleState) -> list[Card]:
         raise NotImplementedError("The \"get\" method is not implemented for this CreateTarget.")
-'''
+    
 class SelfCardTarget(CardTarget):
-    pass
+    def get(self, by: Card, battle_state: BattleState) -> list[Card]:
+        return [by]
 
 class ChooseCardTarget(CardTarget):
     def __init__(self, among: CardPile, count: int = 1):
         self.among = among
         self.count = count
+'''
+class SelfCardTarget(CardTarget):
+    pass
 
 class AllCardsTarget(CardTarget):
     def __init__(self, among: CardPile):
