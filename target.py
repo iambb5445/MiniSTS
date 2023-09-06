@@ -76,6 +76,8 @@ class RandomAgentTarget(AgentTarget):
 class CardPile(Enum):
     HAND = 1
     DISCARD = 2
+    DRAW = 3
+    EXHAUST = 3
 
 class CardTarget:
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:

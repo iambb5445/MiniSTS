@@ -1,11 +1,12 @@
 from __future__ import annotations
 from value import Value
 from action.action import Action
+import copy
+from target import CardTarget, CardPile
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from battle import BattleState
     from game import GameState
-    from target import CardTarget
     from card import Card
     from agent import Agent
 
@@ -72,6 +73,23 @@ class Exhaust(CardTargetedL2):
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Card) -> None:
         battle_state.exhaust(target)
+
+class AddCopy(CardTargetedL2):
+    def __init__(self, card_pile: CardPile):
+        super().__init__()
+        self.card_pile = card_pile
+    
+    def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Card) -> None:
+        if self.card_pile == CardPile.DISCARD:
+            battle_state.discard_pile.append(copy.deepcopy(target))
+        elif self.card_pile == CardPile.DRAW:
+            battle_state.draw_pile.append(copy.deepcopy(target))
+        elif self.card_pile == CardPile.HAND:
+            battle_state.hand.append(copy.deepcopy(target))
+        elif self.card_pile == CardPile.EXHAUST:
+            battle_state.exhause_pile.append(copy.deepcopy(target))
+        else:
+            raise Exception("Unrecognized CardPile to add a copy to")
 
 '''
 class AddCopy(CardTargeted):
