@@ -24,42 +24,53 @@ def get_agent_set_data(agent_set: AgentSet, battle_state: BattleState) -> tuple[
         raise Exception("AgentSet {} not recognized.".format(AgentSet))
 
 class AgentTarget:
-    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
+    def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
         raise NotImplementedError("The \"get\" method is not implemented for this AgentTarget.")
 
     def __repr__(self) -> str:
         return self.__class__.__name__
 
 class SelfAgentTarget(AgentTarget):
-    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
-        return performer
+    def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
+        return [performer]
 
 class PlayerAgentTarget(AgentTarget):
-    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
-        return battle_state.player
+    def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
+        return [battle_state.player]
 
 class ChooseAgentTarget(AgentTarget):
     def __init__(self, among: AgentSet, count: int = 1):
         self.among = among
         self.count = count
     
-    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
+    def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
         name, agent_list = get_agent_set_data(self.among, battle_state)
         index = UserInput.ask_for_number(
             "Enter index among {} indices in (0-{}]: ".format(name, len(agent_list)),
             lambda val: val >= 0 and val < len(agent_list)
         )
-        return agent_list[index]
+        return [agent_list[index]]
         
+class AllAgentsTarget(AgentTarget):
+    def __init__(self, among: AgentSet):
+        self.among = among
+    
+    def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
+        agent_list: list[Agent] = []
+        if self.among == AgentSet.ALL:
+            agent_list += [battle_state.player]
+            agent_list += battle_state.enemies
+        elif self.among == AgentSet.ENEMY:
+            agent_list += battle_state.enemies
+        else:
+            raise Exception("Unrecognized AgentSet {}".format(self.among))
+        return agent_list
+
 '''
 class RandomAgentTarget(AgentTarget):
     def __init__(self, among: AgentSet, count: int = 1):
         self.among = among
         self.count = count
-
-class AllAgentsTarget(AgentTarget):
-    def __init__(self, among: AgentSet):
-        self.among = among
 '''
         
 class CardPile(Enum):

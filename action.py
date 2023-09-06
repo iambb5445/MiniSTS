@@ -25,7 +25,7 @@ class TargetedAction(Action):
         self.target = target
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
-        self.targeted.play(by, game_state, battle_state, self.target.get(by, battle_state))
+        self.targeted.play_many(by, game_state, battle_state, self.target.get(by, battle_state))
     
     def __repr__(self) -> str:
         return self.targeted.__repr__() + " to " + self.target.__repr__()
@@ -39,6 +39,10 @@ class Targeted:
 
     def And(self, other: Targeted) -> Targeted:
         return AndTargeted(self, other)
+    
+    def play_many(self, by: Agent, game_state: GameState, battle_state: BattleState, targets: list[Agent]) -> None:
+        for target in targets:
+            self.play(by, game_state, battle_state, target)
 
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
         raise NotImplementedError("The \"play\" method is not implemented for this Targeted.")

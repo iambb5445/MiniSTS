@@ -1,5 +1,5 @@
 from __future__ import annotations
-from target import AgentSet, ChooseAgentTarget, SelfAgentTarget
+from target import AgentSet, ChooseAgentTarget, SelfAgentTarget, AllAgentsTarget
 from action import Action, DealDamage, ApplyStatus, AddBlock, AddMana
 from config import CardType, Character, Rarity, StatusEffect
 from value import Value, ConstValue, UpgradableOnce, LinearUpgradable
@@ -30,6 +30,7 @@ class CardGen:
     Defend = lambda: Card("Defend", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, AddBlock(UpgradableOnce(5, 8)).To(SelfAgentTarget()))
     Searing_Blow = lambda: Card("SearingBlow", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.UNCOMMON, DealDamage(LinearUpgradable(12, 4)).To(ChooseAgentTarget(AgentSet.ENEMY)))
     Bash = lambda: Card("Bash", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(8, 10)).And(ApplyStatus(UpgradableOnce(2, 3), StatusEffect.VULNERABLE)).To(ChooseAgentTarget(AgentSet.ENEMY)))
+    CLEAVE = lambda: Card("Cleave", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealDamage(UpgradableOnce(8, 11)).To(AllAgentsTarget(AgentSet.ENEMY)))
 
 class CardRepo:
     @staticmethod

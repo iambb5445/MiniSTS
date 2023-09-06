@@ -96,6 +96,9 @@ class BattleState:
         while not self.player_turn_ended:
             self.visualize()
             self.player.play(self.game_state, self)
+            self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
+            if self.get_end_result() != 0:
+                return
         self.discard_hand()
         self.player.clear()
         for enemy in self.enemies:
@@ -103,6 +106,8 @@ class BattleState:
                 self.visualize()
                 enemy.play(self.game_state, self)
                 enemy.clear()
+                if self.get_end_result() != 0:
+                    return
         self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
         
     def get_end_result(self):
