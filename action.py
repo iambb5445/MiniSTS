@@ -109,7 +109,6 @@ class PlayCard(Action):
         battle_state.hand[self.card_index].play(game_state, battle_state)
         battle_state.discard(self.card_index)
 
-
 class NoAction(Action):
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
         pass

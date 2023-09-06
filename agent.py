@@ -4,7 +4,7 @@ from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet
 from action import Action, DealDamage, PlayCard, ApplyStatus, NoAction
 from target import PlayerAgentTarget
-from config import StatusEffect, MAX_BLOCK, CHARACTER_NAME
+from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
 from utility import UserInput
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -36,7 +36,8 @@ class Agent:
     
     def clear(self):
         self.block = 0
-        # TODO status effects decrease
+        for key in self.status_effects:
+            self.status_effects[key] = END_TURN_BEHAVIOR[key](self.status_effects[key])
 
     def gain_block(self, amount: int):
         assert amount >= 0, "Block amount cannot be less than 0"
@@ -52,7 +53,7 @@ class Agent:
     
     def apply_status(self, status: StatusEffect, amount: int):
         assert amount >= 0, "StatusEffect amount cannot be less than 0"
-        self.status_effects[status] = self.status_effects.get(status, 0) + amount
+        self.status_effects[status] = STACK_BEHAVIOR[status](self.status_effects.get(status, 0), amount)
     
     def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
         raise NotImplementedError("The \"_get_action\" method is not implemented for {}.".format(self.__class__.__name__))

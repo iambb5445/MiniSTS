@@ -92,17 +92,18 @@ class BattleState:
         self.mana = self.game_state.max_mana
         self.turn += 1
         self.draw_hand()
-        for agent in self.enemies + [self.player]:
-            agent.clear()
         self.player_turn_ended = False
         while not self.player_turn_ended:
             self.visualize()
             self.player.play(self.game_state, self)
-            # TODO mana
         self.discard_hand()
+        self.player.clear()
         for enemy in self.enemies:
-            self.visualize()
-            enemy.play(self.game_state, self)
+            if not enemy.is_dead():
+                self.visualize()
+                enemy.play(self.game_state, self)
+                enemy.clear()
+        self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
         
     def get_end_result(self):
         if self.player.is_dead():
