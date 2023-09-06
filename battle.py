@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from agent import Enemy
     from game import GameState
     from card import Card
+    from action import Action
 from config import MAX_MANA
 
 import random
@@ -62,7 +63,8 @@ class BattleState:
         print("mana: {}/{}".format(self.mana, self.game_state.max_mana))
         print(self.player)
         for i, enemy in enumerate(self.enemies):
-            print('{}:{}'.format(i, enemy))
+            intention: Action = enemy.get_intention(self.game_state, self)
+            print('{}:{}---{}'.format(i, enemy, intention))
         print("discard pile: ", end=' ')
         for i, card in enumerate(self.discard_pile):
             print('{}:{}'.format(i, card.name), end=' ')
@@ -101,7 +103,19 @@ class BattleState:
         for enemy in self.enemies:
             self.visualize()
             enemy.play(self.game_state, self)
+        
+    def get_end_result(self):
+        if self.player.is_dead():
+            return -1
+        for enemy in self.enemies:
+            if not enemy.is_dead():
+                return 0
+        return 1
 
     def run(self):
-        while(True):
+        while self.get_end_result() == 0:
             self.take_turn()
+        if self.get_end_result() == 1:
+            print("WIN")
+        else:
+            print("LOSE")

@@ -27,6 +27,9 @@ class AgentTarget:
     def get(self, performer: Agent, battle_state: BattleState) -> Agent:
         raise NotImplementedError("The \"get\" method is not implemented for this AgentTarget.")
 
+    def __repr__(self) -> str:
+        return self.__class__.__name__
+
 class SelfAgentTarget(AgentTarget):
     def get(self, performer: Agent, battle_state: BattleState) -> Agent:
         return performer

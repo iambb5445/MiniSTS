@@ -85,23 +85,27 @@ class Player(Agent):
                 print("Card is not playable.")
 
 class Enemy(Agent):
-    def __init__(self, name: str, max_health: int):
+    def __init__(self, name: str, max_health: int, action_set: ItemSet[Action]):
         super().__init__(name, max_health)
+        self.action_set = action_set
+
+    def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
+        return self.action_set.get()
+
+    def get_intention(self, game_state: GameState, battle_state: BattleState) -> Action:
+        return self.action_set.peek()
 
 class AcidSlimeSmall(Enemy):
     def __init__(self, game_state: GameState):
-        max_health_gen = RandomUniformRange(8, 12) if game_state.ascention < 7 else RandomUniformRange(9, 13)
-        super().__init__("AcidSlime (S)", max_health_gen.get())
+        max_health = RandomUniformRange(8, 12) if game_state.ascention < 7 else RandomUniformRange(9, 13)
         if game_state.ascention < 17:
-            self.action_set: ItemSet[Action] = RoundRobinRandomStart(
+            action_set: ItemSet[Action] = RoundRobinRandomStart(
                 DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerAgentTarget()),
                 ApplyStatus(ConstValue(1), StatusEffect.WEAK).To(PlayerAgentTarget())
             )
         else:
-            self.action_set: ItemSet[Action] = RoundRobin(0,
+            action_set: ItemSet[Action] = RoundRobin(0,
                 DealDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerAgentTarget()),
                 ApplyStatus(ConstValue(1), StatusEffect.WEAK).To(PlayerAgentTarget())
             )
-    
-    def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
-        return self.action_set.get()
+        super().__init__("AcidSlime (S)", max_health.get(), action_set)

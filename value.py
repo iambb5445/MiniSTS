@@ -6,9 +6,15 @@ import random
 class Value():
     def get(self) -> int:
         raise NotImplementedError("The \"get\" method is not defined for {}.".format(self.__class__.__name__))
+    
+    def peek(self):
+        return self.get()
 
     def negative(self) -> Value:
         raise NotImplementedError("The \"negative\" method is not defined for {}.".format(self.__class__.__name__))
+    
+    def __repr__(self) -> str:
+        return str(self.peek())
     
 class ConstValue(Value):
     def __init__(self, val: int):
@@ -56,9 +62,19 @@ class RandomUniformRange(Value):
     def __init__(self, begin: int, end: int):
         self.begin = begin
         self.end = end
+        assert self.begin < self.end, "Begin ({}) cannot be greater than or equal to end ({}).".format(self.begin, self.end)
+        self.value: int = 0
+        self.peeked = False
     
     def get(self):
-        return random.randrange(self.begin, self.end)
+        value = self.peek()
+        self.peeked = False
+        return value
+    
+    def peek(self):
+        if not self.peeked:
+            self.value = random.randrange(self.begin, self.end)
+        return self.value
 
     def negative(self) -> LinearUpgradable:
         return LinearUpgradable(self.end * -1, self.begin * -1)

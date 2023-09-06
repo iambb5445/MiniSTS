@@ -6,7 +6,10 @@ T = TypeVar("T")
 
 class ItemSet(Generic[T]):
     def get(self) -> T:
-        raise NotImplementedError("The \"get\" method is not implemented for this ActionSet.")
+        raise NotImplementedError("The \"get\" method is not implemented for {}.".format(self.__class__.__name__))
+
+    def peek(self) -> T:
+        raise NotImplementedError("The \"peek\" method is not implemented for {}.".format(self.__class__.__name__))
 
 class RoundRobinCore(ItemSet[T]):
     def __init__(self, *values: T):
@@ -16,6 +19,9 @@ class RoundRobinCore(ItemSet[T]):
 
     def reset(self) -> None:
         raise NotImplementedError("The \"reset\" method is not implemented for this RoundRobin.")
+
+    def peek(self) -> T:
+        return self.values[self.index]
     
     def get(self) -> T:
         ret = self.values[self.index]
