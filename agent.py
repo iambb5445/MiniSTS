@@ -20,7 +20,7 @@ class Agent:
         self.name = name
     
     def set_name(self) -> None:
-        raise NotImplementedError("Set name is not implemented for this agent.")
+        raise NotImplementedError("Set name is not implemented for {}.".format(self.__class__.__name__))
     
     def is_dead(self):
         return self.health <= 0
@@ -33,6 +33,10 @@ class Agent:
         self.health -= amount
         if self.health <= 0:
             self.health = 0
+    
+    def clear(self):
+        self.block = 0
+        # TODO status effects decrease
 
     def gain_block(self, amount: int):
         assert amount >= 0, "Block amount cannot be less than 0"
@@ -50,8 +54,11 @@ class Agent:
         assert amount >= 0, "StatusEffect amount cannot be less than 0"
         self.status_effects[status] = self.status_effects.get(status, 0) + amount
     
-    def get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
-        raise NotImplementedError("The \"get_action\" method is not implemented for this Agent.")
+    def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
+        raise NotImplementedError("The \"_get_action\" method is not implemented for {}.".format(self.__class__.__name__))
+    
+    def play(self, game_state: GameState, battle_state: BattleState) -> None:
+        self._get_action(game_state, battle_state).play(self, game_state, battle_state)
     
     def __repr__(self) -> str:
         return "{}-hp:[{}/{}]-block:{}-status:{}".format(
@@ -63,15 +70,19 @@ class Player(Agent):
         self.character = character
         super().__init__(CHARACTER_NAME[self.character], MAX_HEALTH[self.character])
     
-    def get_action(self, game_state: GameState, battle_state: BattleState):
-        hand = battle_state.get_hand()
-        if len(hand) > 0:
-            return PlayCard(UserInput.ask_for_number(
-                "Enter card number: ",
-                lambda val: val >= 0 and val < len(battle_state.get_hand())
-            ))
-        print("No card available.")
-        return NoAction()
+    def _get_action(self, game_state: GameState, battle_state: BattleState):
+        while True:
+            card_index = UserInput.ask_for_number(
+                "Enter card number, or -1 for ending your turn: ",
+                lambda val: val >= -1 and val < len(battle_state.get_hand())
+            )
+            if card_index < 0:
+                battle_state.end_player_turn()
+                return NoAction()
+            elif battle_state.is_playable(battle_state.hand[card_index]):
+                return PlayCard(card_index)
+            else:
+                print("Card is not playable.")
 
 class Enemy(Agent):
     def __init__(self, name: str, max_health: int):
@@ -92,5 +103,5 @@ class AcidSlimeSmall(Enemy):
                 ApplyStatus(ConstValue(1), StatusEffect.WEAK).To(PlayerAgentTarget())
             )
     
-    def get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
+    def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
         return self.action_set.get()

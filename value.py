@@ -1,13 +1,14 @@
+from __future__ import annotations
 import random
 
 # Question: do we want to differentiate between CardValue and regular Value? Since only card value should be upgradable!
 
 class Value():
-    def __init__(self):
-        pass
-    
     def get(self) -> int:
-        raise NotImplementedError("The \"get\" method is not defined for this Value.")
+        raise NotImplementedError("The \"get\" method is not defined for {}.".format(self.__class__.__name__))
+
+    def negative(self) -> Value:
+        raise NotImplementedError("The \"negative\" method is not defined for {}.".format(self.__class__.__name__))
     
 class ConstValue(Value):
     def __init__(self, val: int):
@@ -15,6 +16,9 @@ class ConstValue(Value):
     
     def get(self):
         return self.val
+    
+    def negative(self) -> ConstValue:
+        return ConstValue(self.val * -1)
 
 class Upgradable(Value):
     def __init__(self):
@@ -33,6 +37,9 @@ class UpgradableOnce(Upgradable):
     def get(self) -> int:
         return self.val if self.upgrade_count < self.threshold else self.upgraded
 
+    def negative(self) -> UpgradableOnce:
+        return UpgradableOnce(self.val * -1, self.upgraded * -1, self.threshold)
+
 class LinearUpgradable(Upgradable):
     def __init__(self, val: int, step: int, threshold: int = 1):
         self.val = val
@@ -41,6 +48,9 @@ class LinearUpgradable(Upgradable):
     
     def get(self) -> int:
         return self.val + self.step * int(self.upgrade_count/self.threshold)
+
+    def negative(self) -> LinearUpgradable:
+        return LinearUpgradable(self.val * -1, self.step * -1, self.threshold)
     
 class RandomUniformRange(Value):
     def __init__(self, begin: int, end: int):
@@ -49,3 +59,6 @@ class RandomUniformRange(Value):
     
     def get(self):
         return random.randrange(self.begin, self.end)
+
+    def negative(self) -> LinearUpgradable:
+        return LinearUpgradable(self.end * -1, self.begin * -1)

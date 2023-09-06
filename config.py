@@ -1,6 +1,7 @@
 from enum import Enum
 
 MAX_BLOCK = 999
+MAX_MANA = 999
 
 class StatusEffect(Enum):
     VULNERABLE = "Vulnerable"

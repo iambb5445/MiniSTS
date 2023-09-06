@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from agent import Enemy
     from game import GameState
     from card import Card
+from config import MAX_MANA
 
 import random
 
@@ -15,6 +16,7 @@ class BattleState:
         self.turn = 0
         self.mana = 0
         self._start()
+        self.player_turn_ended = False
 
     def _start(self):
         self.draw_pile: list[Card] = [card for card in self.game_state.deck]
@@ -71,17 +73,35 @@ class BattleState:
         for i, card in enumerate(self.hand):
             print('{}:{}'.format(i, card.name), end=' ')
         print()
+
+    def end_player_turn(self):
+        self.player_turn_ended = True
+    
+    def add_to_mana(self, amount: int):
+        self.mana += amount
+        if self.mana > MAX_MANA:
+            self.mana = MAX_MANA
+        assert self.mana >= 0, "Mana value cannot be negative"
+
+    def is_playable(self, card: Card) -> bool:
+        return card.mana_cost.get() <= self.mana
     
     def take_turn(self):
         self.mana = self.game_state.max_mana
         self.turn += 1
         self.draw_hand()
-        self.visualize()
-        end_turn = False
-        while not end_turn:
-            self.player.get_action(self.game_state, self).play(self.game_state, self)
-            end_turn = True # TODO from input
+        for agent in self.enemies + [self.player]:
+            agent.clear()
+        self.player_turn_ended = False
+        while not self.player_turn_ended:
+            self.visualize()
+            self.player.play(self.game_state, self)
             # TODO mana
         self.discard_hand()
         for enemy in self.enemies:
-            enemy.get_action(self.game_state, self).play(self.game_state, self)
+            self.visualize()
+            enemy.play(self.game_state, self)
+
+    def run(self):
+        while(True):
+            self.take_turn()

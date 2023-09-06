@@ -24,14 +24,15 @@ def get_agent_set_data(agent_set: AgentSet, battle_state: BattleState) -> tuple[
         raise Exception("AgentSet {} not recognized.".format(AgentSet))
 
 class AgentTarget:
-    def get(self, battle_state: BattleState) -> Agent:
+    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
         raise NotImplementedError("The \"get\" method is not implemented for this AgentTarget.")
-'''
+
 class SelfAgentTarget(AgentTarget):
-    pass
-'''
+    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
+        return performer
+
 class PlayerAgentTarget(AgentTarget):
-    def get(self, battle_state: BattleState) -> Agent:
+    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
         return battle_state.player
 
 class ChooseAgentTarget(AgentTarget):
@@ -39,7 +40,7 @@ class ChooseAgentTarget(AgentTarget):
         self.among = among
         self.count = count
     
-    def get(self, battle_state: BattleState) -> Agent:
+    def get(self, performer: Agent, battle_state: BattleState) -> Agent:
         name, agent_list = get_agent_set_data(self.among, battle_state)
         index = UserInput.ask_for_number(
             "enter index among {} indices in (0-{}]: ".format(name, len(agent_list)),

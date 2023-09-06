@@ -36,19 +36,25 @@ class RoundRobinRandomStart(RoundRobinCore[T]):
 
 class UserInput:
     @staticmethod
-    def ask_for_number(ask: str, condition: Callable[[int], bool]):
-        inp = input(ask)
+    def ask_for_number(ask: str, condition: Callable[[int], bool] = lambda _: True) -> int:
         while(True):
             try:
-                inp_int = int(inp)
-                if condition(inp_int):
-                    return inp_int
+                inp = int(input(ask))
+                if condition(inp):
+                    return inp
                 else:
                     print("Invalid value")
             except ValueError:
                 print("Please enter an integer value.")
-    '''
     @staticmethod
-    def get_val_in_list(ask: str, val_list: list[T], condition: Callable[[T], bool]):
-        list_ask = '\nEnter the index. Options:' + '\n'.join()
-        UserInput.ask_for_number(ask + , )'''
+    def ask_for_bool(ask: str, yes_default: bool) -> bool:
+        while(True):
+            inp = input(ask + ("[Y/n]" if yes_default else "y/N"))
+            if inp == "":
+                return True if yes_default else False
+            elif inp in ["y", "Y"]:
+                return True
+            elif inp in ["n", "N"]:
+                return False
+            else:
+                print("Invalid value\nPlease enter one of [n or N for no] or [y or Y for yes].")
