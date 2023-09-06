@@ -11,18 +11,6 @@ if TYPE_CHECKING:
 class Action:
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
         raise NotImplementedError("The \"play\" method is not implemented for action {}.".format(self.__class__.__name__))
-'''
-    def And(self, other: Action) -> Action:
-        return AndAction(self, other)
-    
-class AndAction(Action):
-    def __init__(self, *actions: Action):
-        self.actions = [action for action in actions]
-    
-    def play(self):
-        for action in self.actions:
-            action.play()
-'''
 
 class TargetedAction(Action):
     def __init__(self, targeted: Targeted, target: AgentTarget):
