@@ -1,5 +1,6 @@
 from __future__ import annotations
-from target import AgentSet, ChooseAgentTarget, SelfAgentTarget, AllAgentsTarget, CardPile, SelfCardTarget, ChooseCardTarget
+from target.agent_target import AgentSet, ChooseAgentTarget, SelfAgentTarget, AllAgentsTarget
+from target.card_target import CardPile, SelfCardTarget, ChooseCardTarget
 from action.action import Action, AddMana
 from action.agent_targeted_action import DealDamage, ApplyStatus, AddBlock
 from action.card_targeted_action import CardTargetedL1, Exhaust, AddCopy, UpgradeCard

@@ -4,7 +4,7 @@ from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet
 from action.action import Action
 from action.agent_targeted_action import DealDamage, ApplyStatus
-from target import PlayerAgentTarget
+from target.agent_target import PlayerAgentTarget
 from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

@@ -2,7 +2,7 @@ from __future__ import annotations
 from value import Value
 from action.action import Action
 import copy
-from target import CardTarget, CardPile
+from target.card_target import CardTarget, CardPile
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from battle import BattleState
