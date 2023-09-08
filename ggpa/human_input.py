@@ -1,28 +1,25 @@
 from __future__ import annotations
-from agent import Agent
-from battle import BattleState
-from card import Card
-from game import GameState
 from utility import UserInput
-from action.action import NoAction, PlayCard, Action
 from ggpa.ggpa import GGPA
+from action.action import EndPlayerTurn, PlayCard
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game import GameState
     from battle import BattleState
     from agent import Agent
     from card import Card
+    from agent import Agent
+    from card import Card
 
 class HumanInput(GGPA):
-    def choose_card(self, game_state: GameState, battle_state: BattleState) -> Action:
+    def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndPlayerTurn|PlayCard:
         while True:
             card_index = UserInput.ask_for_number(
                 "Enter card number, or -1 for ending your turn: ",
                 lambda val: val >= -1 and val < len(battle_state.get_hand())
             )
             if card_index < 0:
-                battle_state.end_player_turn()
-                return NoAction()
+                return EndPlayerTurn()
             elif battle_state.is_playable(battle_state.hand[card_index]):
                 return PlayCard(card_index)
             else:

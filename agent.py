@@ -2,7 +2,6 @@ from __future__ import annotations
 from config import Character, MAX_HEALTH
 from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet
-from action.action import Action
 from action.agent_targeted_action import DealDamage, ApplyStatus
 from target.agent_target import PlayerAgentTarget
 from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from battle import BattleState
     from game import GameState
+    from action.action import Action
     from ggpa.ggpa import GGPA
 
 class Agent:
