@@ -19,6 +19,7 @@ class BattleState:
         self.mana = 0
         self._start()
         self.player_turn_ended = False
+        self.turn_phase = 0
 
     def _start(self):
         self.draw_pile: list[Card] = [copy.deepcopy(card) for card in self.game_state.deck]
@@ -70,7 +71,7 @@ class BattleState:
         self.exhause_pile.append(card)
     
     def visualize(self):
-        print("*Turn {}*".format(self.turn))
+        print("*Turn {} - {}*".format(self.turn, "Player" if self.turn_phase == 0 else "Enemy {}".format(self.turn_phase-1)))
         print("mana: {}/{}".format(self.mana, self.game_state.max_mana))
         print(self.player)
         for i, enemy in enumerate(self.enemies):
@@ -105,6 +106,7 @@ class BattleState:
     def take_turn(self):
         self.mana = self.game_state.max_mana
         self.turn += 1
+        self.turn_phase = 0
         self.draw_hand()
         self.player_turn_ended = False
         while not self.player_turn_ended:
@@ -118,6 +120,7 @@ class BattleState:
             enemy.clear_block()
         self.discard_hand()
         for enemy in self.enemies:
+            self.turn_phase += 1
             if not enemy.is_dead():
                 self.visualize()
                 enemy.play(self.game_state, self)

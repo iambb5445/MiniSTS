@@ -1,5 +1,4 @@
 from __future__ import annotations
-from utility import UserInput
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from card import Card
@@ -45,11 +44,8 @@ class ChooseAgentTarget(AgentTarget):
     
     def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
         name, agent_list = get_agent_set_data(self.among, battle_state)
-        index = UserInput.ask_for_number(
-            "Enter index among {} indices in (0-{}]: ".format(name, len(agent_list)),
-            lambda val: val >= 0 and val < len(agent_list)
-        )
-        return [agent_list[index]]
+        agent = battle_state.player.bot.choose_agent_target(battle_state, name, agent_list)
+        return [agent]
         
 class AllAgentsTarget(AgentTarget):
     def __init__(self, among: AgentSet):
@@ -106,11 +102,8 @@ class ChooseCardTarget(CardTarget):
     
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:
         name, card_list = get_card_pile_data(self.among, battle_state)
-        index = UserInput.ask_for_number(
-            "Enter index among {} indices in (0-{}]: ".format(name, len(card_list)),
-            lambda val: val >= 0 and val < len(card_list)
-        )
-        return [card_list[index]]
+        card = battle_state.player.bot.choose_card_target(battle_state, name, card_list)
+        return [card]
     
 '''
 class SelfCardTarget(CardTarget):

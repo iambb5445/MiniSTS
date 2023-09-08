@@ -2,15 +2,15 @@ from __future__ import annotations
 from config import Character, MAX_HEALTH
 from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet
-from action.action import Action, PlayCard, NoAction
+from action.action import Action
 from action.agent_targeted_action import DealDamage, ApplyStatus
 from target import PlayerAgentTarget
 from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
-from utility import UserInput
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from battle import BattleState
     from game import GameState
+    from ggpa import GGPA
 
 class Agent:
     def __init__(self, name: str, max_health: int):
@@ -70,23 +70,13 @@ class Agent:
         )
 
 class Player(Agent):
-    def __init__(self, character: Character):
+    def __init__(self, character: Character, bot: GGPA):
         self.character = character
+        self.bot = bot
         super().__init__(CHARACTER_NAME[self.character], MAX_HEALTH[self.character])
     
     def _get_action(self, game_state: GameState, battle_state: BattleState):
-        while True:
-            card_index = UserInput.ask_for_number(
-                "Enter card number, or -1 for ending your turn: ",
-                lambda val: val >= -1 and val < len(battle_state.get_hand())
-            )
-            if card_index < 0:
-                battle_state.end_player_turn()
-                return NoAction()
-            elif battle_state.is_playable(battle_state.hand[card_index]):
-                return PlayCard(card_index)
-            else:
-                print("Card is not playable.")
+        return self.bot.choose_card(game_state, battle_state)
 
 class Enemy(Agent):
     def __init__(self, name: str, max_health: int, action_set: ItemSet[Action]):

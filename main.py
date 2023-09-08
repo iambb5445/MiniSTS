@@ -3,9 +3,10 @@ from battle import BattleState
 from config import Character
 from agent import AcidSlimeSmall
 from card import CardGen
+from ggpa import RandomBot
 
 def main():
-    game_state = GameState(Character.IRON_CLAD, 0)
+    game_state = GameState(Character.IRON_CLAD, RandomBot(), 0)
     game_state.deck.append(CardGen.Cleave())
     game_state.deck.append(CardGen.Impervious())
     game_state.deck.append(CardGen.Anger())
