@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from game import GameState
     from card import Card
     from action.action import Action
-from config import MAX_MANA
+from config import MAX_MANA, Verbose
 
 import random
 
@@ -70,7 +70,9 @@ class BattleState:
             self.discard_pile.remove(card)
         self.exhause_pile.append(card)
     
-    def visualize(self):
+    def visualize(self, verbose: Verbose):
+        if verbose == Verbose.NO_LOG:
+            return
         print("*Turn {} - {}*".format(self.turn, "Player" if self.turn_phase == 0 else "Enemy {}".format(self.turn_phase-1)))
         print("mana: {}/{}".format(self.mana, self.game_state.max_mana))
         print(self.player)
@@ -103,14 +105,14 @@ class BattleState:
     def is_playable(self, card: Card) -> bool:
         return card.mana_cost.get() <= self.mana
     
-    def take_turn(self):
+    def take_turn(self, verbose: Verbose):
         self.mana = self.game_state.max_mana
         self.turn += 1
         self.turn_phase = 0
         self.draw_hand()
         self.player_turn_ended = False
         while not self.player_turn_ended:
-            self.visualize()
+            self.visualize(verbose)
             self.player.play(self.game_state, self)
             self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
             if self.get_end_result() != 0:
@@ -122,7 +124,7 @@ class BattleState:
         for enemy in self.enemies:
             self.turn_phase += 1
             if not enemy.is_dead():
-                self.visualize()
+                self.visualize(verbose)
                 enemy.play(self.game_state, self)
                 if self.get_end_result() != 0:
                     return
@@ -139,9 +141,9 @@ class BattleState:
                 return 0
         return 1
 
-    def run(self):
+    def run(self, verbose: Verbose):
         while self.get_end_result() == 0:
-            self.take_turn()
+            self.take_turn(verbose)
         if self.get_end_result() == 1:
             print("WIN")
         else:

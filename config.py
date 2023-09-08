@@ -58,3 +58,7 @@ CHARACTER_NAME: dict[Character, str] = {
     Character.DEFECT: "Defect",
     Character.WATCHER: "Watcher",
 }
+
+class Verbose(Enum):
+    NO_LOG = 0
+    LOG = 1

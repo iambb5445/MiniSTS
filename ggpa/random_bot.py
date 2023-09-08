@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class RandomBot(GGPA):
     def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndPlayerTurn|PlayCard:
         options: list[EndPlayerTurn|PlayCard] = []
-        options += self.get_card_options(game_state, battle_state)
+        options += self.get_play_card_options(game_state, battle_state)
         options.append(EndPlayerTurn())
         return random.choice(options)
     

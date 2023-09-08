@@ -13,7 +13,8 @@ class GGPA:
     def __init__(self):
         pass
 
-    def get_card_options(self, game_state: GameState, battle_state: BattleState) -> list[PlayCard]:
+    @staticmethod
+    def get_play_card_options(game_state: GameState, battle_state: BattleState) -> list[PlayCard]:
         return [PlayCard(i) for i in range(len(battle_state.hand)) if battle_state.is_playable(battle_state.hand[i])]
 
     def choose_card(self, game_state: GameState, battle_state: BattleState) -> PlayCard|EndPlayerTurn:
