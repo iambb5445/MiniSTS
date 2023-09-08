@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from battle import BattleState
     from game import GameState
     from agent import Agent
-    from target import AgentTarget
+    from target.agent_target import AgentTarget
 
 class AgentTargetedAction(Action):
     def __init__(self, targeted: AgentTargeted, target: AgentTarget):

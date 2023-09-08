@@ -3,7 +3,7 @@ from battle import BattleState
 from config import Character
 from agent import AcidSlimeSmall
 from card import CardGen
-from ggpa import RandomBot
+from ggpa.random_bot import RandomBot
 
 def main():
     game_state = GameState(Character.IRON_CLAD, RandomBot(), 0)

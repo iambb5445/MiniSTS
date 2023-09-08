@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from battle import BattleState
     from game import GameState
-    from ggpa import GGPA
+    from ggpa.ggpa import GGPA
 
 class Agent:
     def __init__(self, name: str, max_health: int):
