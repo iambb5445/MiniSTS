@@ -17,16 +17,13 @@ class BattleState:
         self.game_state = game_state
         self.turn = 0
         self.mana = 0
-        self._start()
         self.player_turn_ended = False
         self.turn_phase = 0
-
-    def _start(self):
         self.draw_pile: list[Card] = [copy.deepcopy(card) for card in self.game_state.deck]
         random.shuffle(self.draw_pile)
         self.discard_pile: list[Card] = []
         self.hand: list[Card] = []
-        self.exhause_pile: list[Card] = []
+        self.exhaust_pile: list[Card] = []
 
     def discard_hand(self):
         self.discard_pile += self.hand
@@ -55,20 +52,40 @@ class BattleState:
     
     def get_hand(self):
         return self.hand
-
-    def discard(self, card_index: int):
-        assert card_index < len(self.hand) and card_index >= 0, "Card index {} out of range for hand {}".format(card_index, self.hand)
-        discarded = self.hand.pop(card_index)
-        self.discard_pile.append(discarded)
     
-    def exhaust(self, card: Card):
+    def play_card(self, card_index: int):
+        assert card_index < len(self.hand) and card_index >= 0, "Card index {} out of range for hand {}".format(card_index, self.hand)
+        card = self.hand.pop(card_index)
+        print('Playing:\n{}'.format(card))
+        assert self.is_playable(card)
+        card.play(self.game_state, self)
+        if not self.is_present(card):
+            self.discard_pile.append(card)
+
+    def is_present(self, card: Card):
+        if card in self.hand:
+            return True
+        if card in self.draw_pile:
+            return True
+        if card in self.discard_pile:
+            return True
+        if card in self.exhaust_pile:
+            return True
+        return False
+    
+    def remove_card(self, card: Card):
         if card in self.hand:
             self.hand.remove(card)
         if card in self.draw_pile:
             self.draw_pile.remove(card)
         if card in self.discard_pile:
             self.discard_pile.remove(card)
-        self.exhause_pile.append(card)
+        if card in self.exhaust_pile:
+            self.exhaust_pile.remove(card)
+    
+    def exhaust(self, card: Card):
+        self.remove_card(card)
+        self.exhaust_pile.append(card)
     
     def visualize(self, verbose: Verbose):
         if verbose == Verbose.NO_LOG:
@@ -80,7 +97,7 @@ class BattleState:
             intention: Action = enemy.get_intention(self.game_state, self)
             print('{}:{}---{}'.format(i, enemy, intention))
         print("exhaust pile: ", end=' ')
-        for i, card in enumerate(self.exhause_pile):
+        for i, card in enumerate(self.exhaust_pile):
             print('{}:{}'.format(i, card.name), end=' ')
         print("\ndiscard pile: ", end=' ')
         for i, card in enumerate(self.discard_pile):
@@ -105,11 +122,13 @@ class BattleState:
     def is_playable(self, card: Card) -> bool:
         return card.mana_cost.get() <= self.mana
     
-    def take_turn(self, verbose: Verbose):
+    def _prepare_turn(self):
         self.mana = self.game_state.max_mana
         self.turn += 1
         self.turn_phase = 0
         self.draw_hand()
+
+    def _take_player_turn(self, verbose: Verbose):
         self.player_turn_ended = False
         while not self.player_turn_ended:
             self.visualize(verbose)
@@ -121,6 +140,8 @@ class BattleState:
         for enemy in self.enemies:
             enemy.clear_block()
         self.discard_hand()
+
+    def _take_enemy_turn(self, verbose: Verbose):
         for enemy in self.enemies:
             self.turn_phase += 1
             if not enemy.is_dead():
@@ -132,6 +153,11 @@ class BattleState:
         for enemy in self.enemies:
             enemy.clear_status()
         self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
+    
+    def take_turn(self, verbose: Verbose):
+        self._prepare_turn()
+        self._take_player_turn(verbose)
+        self._take_enemy_turn(verbose)
         
     def get_end_result(self):
         if self.player.is_dead():

@@ -18,6 +18,7 @@ class Card:
         self.mana_cost = mana_cost
         self.character = character
         self.rarity = rarity
+        self.upgrade_count = 0
         self.mana_action = AddMana(mana_cost.negative())
         self.actions: list[Action] = []
         for action in actions:
@@ -32,13 +33,14 @@ class Card:
             action.play(game_state.player, game_state, battle_state)
 
     def upgrade(self, times: int = 1):
+        self.upgrade_count += times
         self.mana_cost.upgrade(times)
         for action in self.actions:
             for val in action.values:
                 val.upgrade(times)
     
     def __repr__(self) -> str:
-        return "-{}-cost:{}-{}-{}-{}\n-".format(self.name, self.mana_cost, self.card_type, self.rarity, self.character) + \
+        return "-{}{}-cost:{}-{}-{}-{}\n-".format(self.name, "+"*self.upgrade_count, self.mana_cost, self.card_type, self.rarity, self.character) + \
             "\n-".join([action.__repr__() for action in self.actions])
 
 class CardGen:

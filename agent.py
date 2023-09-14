@@ -1,9 +1,10 @@
 from __future__ import annotations
+from action.action import Action
 from config import Character, MAX_HEALTH
 from value import RandomUniformRange, ConstValue
-from utility import RoundRobin, RoundRobinRandomStart, ItemSet
-from action.agent_targeted_action import DealDamage, ApplyStatus
-from target.agent_target import PlayerAgentTarget
+from utility import RoundRobin, RoundRobinRandomStart, ItemSet, ItemSequence, RandomizedItemSet, PreventRepeats
+from action.agent_targeted_action import DealDamage, AddBlock, ApplyStatus
+from target.agent_target import PlayerAgentTarget, SelfAgentTarget
 from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -41,6 +42,7 @@ class Agent:
     def clear_status(self):
         for key in self.status_effects:
             self.status_effects[key] = END_TURN_BEHAVIOR[key](self.status_effects[key])
+        self.status_effects = dict([(effect, value) for effect, value in self.status_effects.items() if value > 0])
 
     def gain_block(self, amount: int):
         assert amount >= 0, "Block amount cannot be less than 0"
@@ -103,3 +105,21 @@ class AcidSlimeSmall(Enemy):
                 ApplyStatus(ConstValue(1), StatusEffect.WEAK).To(PlayerAgentTarget())
             )
         super().__init__("AcidSlime (S)", max_health.get(), action_set)
+
+class SpikeSlimeSmall(Enemy):
+    def __init__(self, game_state: GameState):
+        max_health = RandomUniformRange(10, 14) if game_state.ascention < 7 else RandomUniformRange(11, 15)
+        action_set: ItemSet[Action] = RoundRobin(0, DealDamage(ConstValue(5 if game_state.ascention < 2 else 6)).To(PlayerAgentTarget()))
+        super().__init__("SpikeSlime (S)", max_health.get(), action_set)
+
+class JawWorm(Enemy):
+    def __init__(self, game_state: GameState):
+        max_health = RandomUniformRange(40, 44) if game_state.ascention < 7 else RandomUniformRange(42, 46)
+        chomp: Action = DealDamage(ConstValue(11 if game_state.ascention < 2 else 12)).To(PlayerAgentTarget())
+        thrash: Action = DealDamage(ConstValue(7)).To(PlayerAgentTarget()).And(AddBlock(ConstValue(5)).To(SelfAgentTarget()))
+        bellow: Action = ApplyStatus(ConstValue(3 if game_state.ascention < 2 else 4 if game_state.ascention < 17 else 5), StatusEffect.STRENGTH).And(AddBlock(ConstValue(5))).To(SelfAgentTarget())
+        regular_turn: ItemSet[Action] = RandomizedItemSet((bellow, 0.45), (thrash, 0.30), (chomp, 0.25))
+        all_turns: ItemSet[Action] = ItemSequence(chomp, regular_turn)
+        action_set = PreventRepeats(all_turns, (bellow, 2), (thrash, 3), (chomp, 2), consecutive=True)
+        super().__init__("JawWorm", max_health.get(), action_set)
+        

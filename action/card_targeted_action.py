@@ -90,7 +90,7 @@ class AddCopy(CardTargetedL2):
         elif self.card_pile == CardPile.HAND:
             battle_state.hand.append(copy.deepcopy(target))
         elif self.card_pile == CardPile.EXHAUST:
-            battle_state.exhause_pile.append(copy.deepcopy(target))
+            battle_state.exhaust_pile.append(copy.deepcopy(target))
         else:
             raise Exception("Unrecognized CardPile to add a copy to")
 

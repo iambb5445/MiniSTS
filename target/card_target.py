@@ -22,7 +22,7 @@ def get_card_pile_data(card_pile: CardPile, battle_state: BattleState) -> tuple[
         card_list: list[Card] = [card for card in battle_state.draw_pile]
         return "draw", card_list
     elif card_pile == CardPile.EXHAUST:
-        card_list: list[Card] = [card for card in battle_state.exhause_pile]
+        card_list: list[Card] = [card for card in battle_state.exhaust_pile]
         return "exhaust", card_list
     else:
         raise Exception("CardPile {} not recognized.".format(card_pile))

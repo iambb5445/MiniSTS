@@ -14,3 +14,7 @@ class GameState:
         self.deck: list[Card] = CardRepo.get_starter(character)
         self.draw_count = 5
         self.max_mana = 3
+
+    def add_to_deck(self, *cards: Card):
+        for card in cards:
+            self.deck.append(card)
