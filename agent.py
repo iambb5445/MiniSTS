@@ -40,10 +40,14 @@ class Agent:
     def clear_block(self):
         self.block = 0
         
-    def clear_status(self):
+    def decrease_status(self):
         for key in self.status_effects:
             self.status_effects[key] = END_TURN_BEHAVIOR[key](self.status_effects[key])
         self.status_effects = dict([(effect, value) for effect, value in self.status_effects.items() if value > 0])
+
+    def clean_up(self):
+        self.status_effects = {}
+        self.block = 0
 
     def gain_block(self, amount: int):
         assert amount >= 0, "Block amount cannot be less than 0"

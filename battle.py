@@ -19,9 +19,8 @@ class BattleState:
         self.mana = 0
         self.agent_turn_ended = False
         self.turn_phase = 0
-        self.draw_pile: list[Card] = [copy.deepcopy(card) for card in self.game_state.deck]
-        random.shuffle(self.draw_pile)
-        self.discard_pile: list[Card] = []
+        self.draw_pile: list[Card] = []
+        self.discard_pile: list[Card] = [copy.deepcopy(card) for card in self.game_state.deck]
         self.hand: list[Card] = []
         self.exhaust_pile: list[Card] = []
         self.verbose = verbose
@@ -137,7 +136,7 @@ class BattleState:
         for agent in side:
             self._take_agent_turn(agent)
         for agent in side:
-            agent.clear_status()
+            agent.decrease_status()
         for agent in other_side:
             agent.clear_block()
 
@@ -158,7 +157,7 @@ class BattleState:
         if not self.agent_turn_ended:
             return True
         self.turn_phase += 1
-        self.player.clear_status()
+        self.player.decrease_status()
         for enemy in self.enemies:
             enemy.clear_block()
         self._play_side([enemy for enemy in self.enemies], [self.player])
@@ -184,7 +183,9 @@ class BattleState:
     def run(self):
         while not self.ended():
             self.take_turn()
-        if self.get_end_result() == 1:
-            print("WIN")
-        else:
-            print("LOSE")
+        self.player.clean_up()
+        if self.verbose == Verbose.LOG:
+            if self.get_end_result() == 1:
+                print("WIN")
+            else:
+                print("LOSE")

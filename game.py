@@ -18,3 +18,8 @@ class GameState:
     def add_to_deck(self, *cards: Card):
         for card in cards:
             self.deck.append(card)
+
+    def get_end_results(self):
+        if self.player.is_dead():
+            return -1
+        return 1 # TODO is this a good idea? is this actually win?

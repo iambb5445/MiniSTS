@@ -54,9 +54,6 @@ class ChooseCardTarget(CardTarget):
         return [card]
     
 '''
-class SelfCardTarget(CardTarget):
-    pass
-
 class AllCardsTarget(CardTarget):
     def __init__(self, among: CardPile):
         self.among = among
