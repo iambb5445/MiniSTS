@@ -3,6 +3,7 @@ from action.action import Action
 from config import Character, MAX_HEALTH
 from value import RandomUniformRange, ConstValue
 from utility import RoundRobin, RoundRobinRandomStart, ItemSet, ItemSequence, RandomizedItemSet, PreventRepeats
+from action.action import EndAgentTurn
 from action.agent_targeted_action import DealDamage, AddBlock, ApplyStatus
 from target.agent_target import PlayerAgentTarget, SelfAgentTarget
 from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
@@ -86,7 +87,7 @@ class Enemy(Agent):
         self.action_set = action_set
 
     def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
-        return self.action_set.get()
+        return self.action_set.get().And(EndAgentTurn())
 
     def get_intention(self, game_state: GameState, battle_state: BattleState) -> Action:
         return self.action_set.peek()

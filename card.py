@@ -38,9 +38,12 @@ class Card:
         for action in self.actions:
             for val in action.values:
                 val.upgrade(times)
+
+    def get_name(self):
+        return "{}{}".format(self.name, "+"*self.upgrade_count)
     
     def __repr__(self) -> str:
-        return "-{}{}-cost:{}-{}-{}-{}\n-".format(self.name, "+"*self.upgrade_count, self.mana_cost, self.card_type, self.rarity, self.character) + \
+        return "-{}-cost:{}-{}-{}-{}\n-".format(self.get_name(), self.mana_cost, self.card_type, self.rarity, self.character) + \
             "\n-".join([action.__repr__() for action in self.actions])
 
 class CardGen:
@@ -50,7 +53,6 @@ class CardGen:
     Bash = lambda: Card("Bash", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(8, 10)).And(ApplyStatus(UpgradableOnce(2, 3), StatusEffect.VULNERABLE)).To(ChooseAgentTarget(AgentSet.ENEMY)))
     Anger = lambda: Card("Anger", CardType.ATTACK, ConstValue(0), Character.IRON_CLAD, Rarity.COMMON, DealDamage(UpgradableOnce(6, 8)).To(ChooseAgentTarget(AgentSet.ENEMY)), AddCopy(CardPile.DISCARD).To(SelfCardTarget()))
     # TODO upgrade for Armament
-    # TODO Armament exclude self from choose
     Armaments = lambda: Card("Armament", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, AddBlock(ConstValue(5)).To(SelfAgentTarget()), UpgradeCard().To(ChooseCardTarget(CardPile.HAND)))
     Cleave = lambda: Card("Cleave", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealDamage(UpgradableOnce(8, 11)).To(AllAgentsTarget(AgentSet.ENEMY)))
     Impervious = lambda: Card("Impervious", CardType.SKILL, ConstValue(2), Character.IRON_CLAD, Rarity.RARE, AddBlock(UpgradableOnce(30, 40)).To(SelfAgentTarget()), Exhaust().To(SelfCardTarget()))

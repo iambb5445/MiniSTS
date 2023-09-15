@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from action.action import EndPlayerTurn, PlayCard
+from action.action import EndAgentTurn, PlayCard
 if TYPE_CHECKING:
     from game import GameState
     from battle import BattleState
@@ -17,7 +17,7 @@ class GGPA:
     def get_play_card_options(game_state: GameState, battle_state: BattleState) -> list[PlayCard]:
         return [PlayCard(i) for i in range(len(battle_state.hand)) if battle_state.is_playable(battle_state.hand[i])]
 
-    def choose_card(self, game_state: GameState, battle_state: BattleState) -> PlayCard|EndPlayerTurn:
+    def choose_card(self, game_state: GameState, battle_state: BattleState) -> PlayCard|EndAgentTurn:
         raise NotImplementedError("The \"choose_card\" method is not implemented for {}.".format(self.__class__.__name__))
     
     def choose_agent_target(self, battle_state: BattleState, list_name: str, agent_list: list[Agent]) -> Agent:

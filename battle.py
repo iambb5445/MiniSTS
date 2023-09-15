@@ -2,13 +2,24 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from agent import Enemy
+    from agent import Enemy, Agent
     from game import GameState
     from card import Card
     from action.action import Action
 from config import MAX_MANA, Verbose
 
 import random
+
+class BattleSt:
+    def __init__(self, sides: tuple[list[Agent], list[Agent]]):
+        self.turn = 0
+        self.sides = sides
+    
+    def visualise(self, verbose: Verbose):
+        pass
+
+    def take_action(self, action: Action):
+        pass#action.play()
 
 class BattleState:
     def __init__(self, game_state: GameState, *enemies: Enemy):
@@ -17,7 +28,7 @@ class BattleState:
         self.game_state = game_state
         self.turn = 0
         self.mana = 0
-        self.player_turn_ended = False
+        self.agent_turn_ended = False
         self.turn_phase = 0
         self.draw_pile: list[Card] = [copy.deepcopy(card) for card in self.game_state.deck]
         random.shuffle(self.draw_pile)
@@ -98,20 +109,20 @@ class BattleState:
             print('{}:{}---{}'.format(i, enemy, intention))
         print("exhaust pile: ", end=' ')
         for i, card in enumerate(self.exhaust_pile):
-            print('{}:{}'.format(i, card.name), end=' ')
+            print('{}:{}'.format(i, card.get_name()), end=' ')
         print("\ndiscard pile: ", end=' ')
         for i, card in enumerate(self.discard_pile):
-            print('{}:{}'.format(i, card.name), end=' ')
+            print('{}:{}'.format(i, card.get_name()), end=' ')
         print("\ndraw pile: ", end=' ')
         for i, card in enumerate(self.draw_pile):
-            print('{}:{}'.format(i, card.name), end=' ')
+            print('{}:{}'.format(i, card.get_name()), end=' ')
         print("\nhand: ", end=' ')
         for i, card in enumerate(self.hand):
-            print('{}:{}'.format(i, card.name), end=' ')
+            print('{}:{}'.format(i, card.get_name()), end=' ')
         print()
 
-    def end_player_turn(self):
-        self.player_turn_ended = True
+    def end_agent_turn(self):
+        self.agent_turn_ended = True
     
     def add_to_mana(self, amount: int):
         self.mana += amount
@@ -121,44 +132,41 @@ class BattleState:
 
     def is_playable(self, card: Card) -> bool:
         return card.mana_cost.get() <= self.mana
+
+    def _take_agent_turn(self, agent: Agent, verbose: Verbose):
+        self.agent_turn_ended = False
+        while self.step_agent(agent, verbose):
+            self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
+        self.turn_phase += 1
+
+    def step_agent(self, agent: Agent, verbose: Verbose):
+        if agent.is_dead() or self.ended() or self.agent_turn_ended:
+            return False
+        self.visualize(verbose)
+        agent.play(self.game_state, self)
+        return True
     
-    def _prepare_turn(self):
+    def _play_side(self, side: list[Agent], other_side: list[Agent], verbose: Verbose):
+        for agent in side:
+            self._take_agent_turn(agent, verbose)
+        for agent in side:
+            agent.clear_status()
+        for agent in other_side:
+            agent.clear_block()
+
+    def take_turn(self, verbose: Verbose):
         self.mana = self.game_state.max_mana
         self.turn += 1
         self.turn_phase = 0
         self.draw_hand()
-
-    def _take_player_turn(self, verbose: Verbose):
-        self.player_turn_ended = False
-        while not self.player_turn_ended:
-            self.visualize(verbose)
-            self.player.play(self.game_state, self)
-            self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
-            if self.get_end_result() != 0:
-                return
-        self.player.clear_status()
-        for enemy in self.enemies:
-            enemy.clear_block()
+        sides: tuple[list[Agent], list[Agent]] = ([self.player], [enemy for enemy in self.enemies])
+        self._play_side(sides[0], sides[1], verbose)
+        self._play_side(sides[1], sides[0], verbose)
         self.discard_hand()
-
-    def _take_enemy_turn(self, verbose: Verbose):
-        for enemy in self.enemies:
-            self.turn_phase += 1
-            if not enemy.is_dead():
-                self.visualize(verbose)
-                enemy.play(self.game_state, self)
-                if self.get_end_result() != 0:
-                    return
-        self.player.clear_block()
-        for enemy in self.enemies:
-            enemy.clear_status()
-        self.enemies = [enemy for enemy in self.enemies if not enemy.is_dead()]
-    
-    def take_turn(self, verbose: Verbose):
-        self._prepare_turn()
-        self._take_player_turn(verbose)
-        self._take_enemy_turn(verbose)
         
+    def ended(self):
+        return self.get_end_result() != 0
+    
     def get_end_result(self):
         if self.player.is_dead():
             return -1
@@ -168,7 +176,7 @@ class BattleState:
         return 1
 
     def run(self, verbose: Verbose):
-        while self.get_end_result() == 0:
+        while not self.ended():
             self.take_turn(verbose)
         if self.get_end_result() == 1:
             print("WIN")

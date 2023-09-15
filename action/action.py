@@ -54,7 +54,6 @@ class NoAction(Action):
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
         pass
 
-class EndPlayerTurn(Action):
+class EndAgentTurn(Action):
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
-        if by == game_state.player:
-            battle_state.end_player_turn()
+        battle_state.end_agent_turn()

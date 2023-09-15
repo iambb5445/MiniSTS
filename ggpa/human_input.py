@@ -1,7 +1,7 @@
 from __future__ import annotations
 from utility import UserInput
 from ggpa.ggpa import GGPA
-from action.action import EndPlayerTurn, PlayCard
+from action.action import EndAgentTurn, PlayCard
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game import GameState
@@ -12,14 +12,14 @@ if TYPE_CHECKING:
     from card import Card
 
 class HumanInput(GGPA):
-    def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndPlayerTurn|PlayCard:
+    def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndAgentTurn|PlayCard:
         while True:
             card_index = UserInput.ask_for_number(
                 "Enter card number, or -1 for ending your turn: ",
                 lambda val: val >= -1 and val < len(battle_state.get_hand())
             )
             if card_index < 0:
-                return EndPlayerTurn()
+                return EndAgentTurn()
             elif battle_state.is_playable(battle_state.hand[card_index]):
                 return PlayCard(card_index)
             else:
@@ -34,7 +34,7 @@ class HumanInput(GGPA):
     
     def choose_card_target(self, battle_state: BattleState, list_name: str, card_list: list[Card]) -> Card:
         index = UserInput.ask_for_number(
-            "Enter index among {} indices in (0-{}]: ".format(list_name, len(card_list)),
+            "Enter index among {} indices in {}: ".format(list_name, " ".join(["{}:{}".format(i, card_list[i].get_name()) for i in range(len(card_list))])),
             lambda val: val >= 0 and val < len(card_list)
         )
         return card_list[index]

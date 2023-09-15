@@ -1,7 +1,7 @@
 from __future__ import annotations
 import random
 from ggpa.ggpa import GGPA
-from action.action import EndPlayerTurn, PlayCard
+from action.action import EndAgentTurn, PlayCard
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game import GameState
@@ -12,10 +12,10 @@ if TYPE_CHECKING:
     from card import Card
 
 class RandomBot(GGPA):
-    def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndPlayerTurn|PlayCard:
-        options: list[EndPlayerTurn|PlayCard] = []
+    def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndAgentTurn|PlayCard:
+        options: list[EndAgentTurn|PlayCard] = []
         options += self.get_play_card_options(game_state, battle_state)
-        options.append(EndPlayerTurn())
+        options.append(EndAgentTurn())
         return random.choice(options)
     
     def choose_agent_target(self, battle_state: BattleState, list_name: str, agent_list: list[Agent]) -> Agent:
