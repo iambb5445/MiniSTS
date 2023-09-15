@@ -16,6 +16,12 @@ class GGPA:
     @staticmethod
     def get_play_card_options(game_state: GameState, battle_state: BattleState) -> list[PlayCard]:
         return [PlayCard(i) for i in range(len(battle_state.hand)) if battle_state.hand[i].is_playable(game_state, battle_state)]
+    
+    def get_choose_card_options(self, game_state: GameState, battle_state: BattleState) -> list[PlayCard|EndAgentTurn]:
+        options: list[EndAgentTurn|PlayCard] = []
+        options += self.get_play_card_options(game_state, battle_state)
+        options.append(EndAgentTurn())
+        return options
 
     def choose_card(self, game_state: GameState, battle_state: BattleState) -> PlayCard|EndAgentTurn:
         raise NotImplementedError("The \"choose_card\" method is not implemented for {}.".format(self.__class__.__name__))

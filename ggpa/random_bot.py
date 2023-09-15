@@ -13,9 +13,7 @@ if TYPE_CHECKING:
 
 class RandomBot(GGPA):
     def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndAgentTurn|PlayCard:
-        options: list[EndAgentTurn|PlayCard] = []
-        options += self.get_play_card_options(game_state, battle_state)
-        options.append(EndAgentTurn())
+        options = self.get_choose_card_options(game_state, battle_state)
         return random.choice(options)
     
     def choose_agent_target(self, battle_state: BattleState, list_name: str, agent_list: list[Agent]) -> Agent:

@@ -10,19 +10,8 @@ from config import MAX_MANA, Verbose
 
 import random
 
-class BattleSt:
-    def __init__(self, sides: tuple[list[Agent], list[Agent]]):
-        self.turn = 0
-        self.sides = sides
-    
-    def visualise(self, verbose: Verbose):
-        pass
-
-    def take_action(self, action: Action):
-        pass#action.play()
-
 class BattleState:
-    def __init__(self, game_state: GameState, *enemies: Enemy):
+    def __init__(self, game_state: GameState, *enemies: Enemy, verbose: Verbose):
         self.player = game_state.player
         self.enemies = [enemy for enemy in enemies]
         self.game_state = game_state
@@ -35,6 +24,7 @@ class BattleState:
         self.discard_pile: list[Card] = []
         self.hand: list[Card] = []
         self.exhaust_pile: list[Card] = []
+        self.verbose = verbose
 
     def discard_hand(self):
         self.discard_pile += self.hand
@@ -67,7 +57,8 @@ class BattleState:
     def play_card(self, card_index: int):
         assert card_index < len(self.hand) and card_index >= 0, "Card index {} out of range for hand {}".format(card_index, self.hand)
         card = self.hand.pop(card_index)
-        print('Playing:\n{}'.format(card))
+        if self.verbose == Verbose.LOG:
+            print('Playing:\n{}'.format(card))
         card.play(self.game_state, self)
         if not self.is_present(card):
             self.discard_pile.append(card)
@@ -97,8 +88,8 @@ class BattleState:
         self.remove_card(card)
         self.exhaust_pile.append(card)
     
-    def visualize(self, verbose: Verbose):
-        if verbose == Verbose.NO_LOG:
+    def visualize(self):
+        if self.verbose == Verbose.NO_LOG:
             return
         print("*Turn {} - {}*".format(self.turn, "Player" if self.turn_phase == 0 else "Enemy {}".format(self.turn_phase-1)))
         print("mana: {}/{}".format(self.mana, self.game_state.max_mana))
@@ -129,36 +120,55 @@ class BattleState:
             self.mana = MAX_MANA
         assert self.mana >= 0, "Mana value cannot be negative"
 
-    def _take_agent_turn(self, agent: Agent, verbose: Verbose):
-        self.agent_turn_ended = False
-        while self.step_agent(agent, verbose):
-            self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
-        self.turn_phase += 1
-
-    def step_agent(self, agent: Agent, verbose: Verbose):
+    def _step_agent(self, agent: Agent) -> bool:
         if agent.is_dead() or self.ended() or self.agent_turn_ended:
             return False
-        self.visualize(verbose)
+        self.visualize()
         agent.play(self.game_state, self)
         return True
+
+    def _take_agent_turn(self, agent: Agent):
+        self.agent_turn_ended = False
+        while self._step_agent(agent):
+            self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
+        self.turn_phase += 1
     
-    def _play_side(self, side: list[Agent], other_side: list[Agent], verbose: Verbose):
+    def _play_side(self, side: list[Agent], other_side: list[Agent]):
         for agent in side:
-            self._take_agent_turn(agent, verbose)
+            self._take_agent_turn(agent)
         for agent in side:
             agent.clear_status()
         for agent in other_side:
             agent.clear_block()
 
-    def take_turn(self, verbose: Verbose):
+    def take_turn(self):
         self.mana = self.game_state.max_mana
         self.turn += 1
         self.turn_phase = 0
         self.draw_hand()
-        sides: tuple[list[Agent], list[Agent]] = ([self.player], [enemy for enemy in self.enemies])
-        self._play_side(sides[0], sides[1], verbose)
-        self._play_side(sides[1], sides[0], verbose)
+        self._play_side([self.player], [enemy for enemy in self.enemies])
+        self._play_side([enemy for enemy in self.enemies], [self.player])
         self.discard_hand()
+
+    def tick_player(self, action: Action) -> bool:
+        if self.ended():
+            return False
+        action.play(self.player, self.game_state, self)
+        self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
+        if not self.agent_turn_ended:
+            return True
+        self.turn_phase += 1
+        self.player.clear_status()
+        for enemy in self.enemies:
+            enemy.clear_block()
+        self._play_side([enemy for enemy in self.enemies], [self.player])
+        self.discard_hand()
+        self.mana = self.game_state.max_mana
+        self.turn += 1
+        self.turn_phase = 0
+        self.draw_hand()
+        self.agent_turn_ended = False
+        return True
         
     def ended(self):
         return self.get_end_result() != 0
@@ -171,9 +181,9 @@ class BattleState:
                 return 0
         return 1
 
-    def run(self, verbose: Verbose):
+    def run(self):
         while not self.ended():
-            self.take_turn(verbose)
+            self.take_turn()
         if self.get_end_result() == 1:
             print("WIN")
         else:
