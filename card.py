@@ -28,9 +28,13 @@ class Card:
                 self.actions.append(action.By(self))
     
     def play(self, game_state: GameState, battle_state: BattleState):
+        assert self.is_playable(game_state, battle_state)
         self.mana_action.play(game_state.player, game_state, battle_state)
         for action in self.actions:
             action.play(game_state.player, game_state, battle_state)
+
+    def is_playable(self, game_state: GameState, battle_state: BattleState):
+        return self.mana_cost.peek() <= battle_state.mana
 
     def upgrade(self, times: int = 1):
         self.upgrade_count += times

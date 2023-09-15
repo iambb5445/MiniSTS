@@ -20,7 +20,7 @@ class HumanInput(GGPA):
             )
             if card_index < 0:
                 return EndAgentTurn()
-            elif battle_state.is_playable(battle_state.hand[card_index]):
+            elif battle_state.hand[card_index].is_playable(game_state, battle_state):
                 return PlayCard(card_index)
             else:
                 print("Card is not playable.")

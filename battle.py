@@ -68,7 +68,6 @@ class BattleState:
         assert card_index < len(self.hand) and card_index >= 0, "Card index {} out of range for hand {}".format(card_index, self.hand)
         card = self.hand.pop(card_index)
         print('Playing:\n{}'.format(card))
-        assert self.is_playable(card)
         card.play(self.game_state, self)
         if not self.is_present(card):
             self.discard_pile.append(card)
@@ -129,9 +128,6 @@ class BattleState:
         if self.mana > MAX_MANA:
             self.mana = MAX_MANA
         assert self.mana >= 0, "Mana value cannot be negative"
-
-    def is_playable(self, card: Card) -> bool:
-        return card.mana_cost.get() <= self.mana
 
     def _take_agent_turn(self, agent: Agent, verbose: Verbose):
         self.agent_turn_ended = False
