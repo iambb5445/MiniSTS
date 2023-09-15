@@ -18,7 +18,11 @@ class CardTargetedAction(Action):
         self.by = by
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
-        self.targeted.play_many(by, game_state, battle_state, self.target.get(self.by, battle_state))
+        try:
+            target_card = self.target.get(self.by, battle_state)
+        except CardTarget.NoneAvailabeException:
+            return
+        self.targeted.play_many(by, game_state, battle_state, target_card)
     
     def __repr__(self) -> str:
         return self.targeted.__repr__()# + " by " + self.by.name

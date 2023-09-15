@@ -28,6 +28,9 @@ def get_card_pile_data(card_pile: CardPile, battle_state: BattleState) -> tuple[
         raise Exception("CardPile {} not recognized.".format(card_pile))
 
 class CardTarget:
+    class NoneAvailabeException(Exception):
+        pass
+
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:
         raise NotImplementedError("The \"get\" method is not implemented for this CreateTarget.")
 
@@ -45,6 +48,8 @@ class ChooseCardTarget(CardTarget):
     
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:
         name, card_list = get_card_pile_data(self.among, battle_state)
+        if len(card_list) == 0:
+            raise CardTarget.NoneAvailabeException()
         card = battle_state.player.bot.choose_card_target(battle_state, name, card_list)
         return [card]
     
