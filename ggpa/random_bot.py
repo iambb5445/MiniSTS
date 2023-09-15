@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from card import Card
 
 class RandomBot(GGPA):
+    def __init__(self):
+        super().__init__("RandomBot")
+
     def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndAgentTurn|PlayCard:
         options = self.get_choose_card_options(game_state, battle_state)
         return random.choice(options)

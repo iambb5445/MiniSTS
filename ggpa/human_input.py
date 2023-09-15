@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class HumanInput(GGPA):
     def __init__(self, should_describe_options: bool):
-        super().__init__()
+        super().__init__("HumanInput")
         self.should_describe_options = should_describe_options
     
     def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndAgentTurn|PlayCard:

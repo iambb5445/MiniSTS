@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 class BacktrackBot(GGPA):
     def __init__(self, depth: int):
+        super().__init__(f"Backtrack-Depth{depth}")
         self.depth = depth
 
     def _evaluate_state(self, game_state: GameState, battle_state: BattleState) -> int:
