@@ -17,10 +17,13 @@ class BacktrackBot(GGPA):
         super().__init__(f"Backtrack-Depth{depth}")
         self.depth = depth
 
-    def _evaluate_state(self, game_state: GameState, battle_state: BattleState) -> int:
-        return battle_state.player.health - sum([enemy.health for enemy in battle_state.enemies])
+    def _evaluate_state(self, game_state: GameState, battle_state: BattleState) -> float:
+        win = battle_state.get_end_result()
+        if win == -1:
+            return -1000
+        return battle_state.player.health - sum([enemy.health for enemy in battle_state.enemies]) + (0.5 if win == 1 else 0)
     
-    def _get_best_choose_card(self, game_state: GameState, battle_state: BattleState, depth_remaining: int) -> tuple[int|None, PlayCard|EndAgentTurn|None]:
+    def _get_best_choose_card(self, game_state: GameState, battle_state: BattleState, depth_remaining: int) -> tuple[float|None, PlayCard|EndAgentTurn|None]:
         if depth_remaining == 0:
             return self._evaluate_state(game_state, battle_state), None
         options = self.get_choose_card_options(game_state, battle_state)
@@ -29,7 +32,7 @@ class BacktrackBot(GGPA):
             battle_state_copy: BattleState = deepcopy(battle_state)
             battle_state_copy.verbose = Verbose.NO_LOG
             if not battle_state_copy.tick_player(option):
-                estimate = battle_state_copy.get_end_result() * 1000
+                estimate = self._evaluate_state(battle_state_copy.game_state, battle_state_copy)
             else:
                 estimate, _ = self._get_best_choose_card(battle_state_copy.game_state, battle_state_copy, depth_remaining-1)
             if best_value is None or (estimate is not None and best_value < estimate):
