@@ -25,6 +25,37 @@ class BattleState:
         self.exhaust_pile: list[Card] = []
         self.verbose = verbose
 
+    def copy_undeterministic(self) -> BattleState:
+        battle_state_copy = copy.deepcopy(self)
+        random.shuffle(battle_state_copy.draw_pile)
+        return battle_state_copy
+    
+    def get_undeterministic_repr_hash(self) -> str:
+        import hashlib
+        combined_hash = hashlib.sha256()
+        for agent in [self.player] + self.enemies:
+            combined_hash.update(hashlib.sha256(agent.__repr__().encode()).digest())
+        combined_hash.update(hashlib.sha256(self.turn.__repr__().encode()).digest())
+        combined_hash.update(hashlib.sha256(self.mana.__repr__().encode()).digest())
+        combined_hash.update(hashlib.sha256(self.agent_turn_ended.__repr__().encode()).digest())
+        combined_hash.update(hashlib.sha256(self.turn_phase.__repr__().encode()).digest())
+        sorted_draw_pile = sorted(self.draw_pile, key=lambda card: repr(card))
+        sorted_discard_pile = sorted(self.discard_pile, key=lambda card: repr(card))
+        sorted_hand = sorted(self.hand, key=lambda card: repr(card))
+        sorted_exhaust_pile = sorted(self.exhaust_pile, key=lambda card: repr(card))
+        for card in sorted_draw_pile:
+            combined_hash.update(hashlib.sha256(card.__repr__().encode()).digest())
+        combined_hash.update(hashlib.sha256('-'.encode()).digest())
+        for card in sorted_discard_pile:
+            combined_hash.update(hashlib.sha256(card.__repr__().encode()).digest())
+        combined_hash.update(hashlib.sha256('-'.encode()).digest())
+        for card in sorted_hand:
+            combined_hash.update(hashlib.sha256(card.__repr__().encode()).digest())
+        combined_hash.update(hashlib.sha256('-'.encode()).digest())
+        for card in sorted_exhaust_pile:
+            combined_hash.update(hashlib.sha256(card.__repr__().encode()).digest())
+        return combined_hash.hexdigest()
+
     def discard_hand(self):
         self.discard_pile += self.hand
         self.hand = []
@@ -103,7 +134,8 @@ class BattleState:
         for i, card in enumerate(self.discard_pile):
             print('{}:{}'.format(i, card.get_name()), end=' ')
         print("\ndraw pile: ", end=' ')
-        for i, card in enumerate(self.draw_pile):
+        sorted_draw: list[Card] = sorted(self.draw_pile, key=lambda card: repr(card))
+        for i, card in enumerate(sorted_draw):
             print('{}:{}'.format(i, card.get_name()), end=' ')
         print("\nhand: ", end=' ')
         for i, card in enumerate(self.hand):
