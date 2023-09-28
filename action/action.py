@@ -49,6 +49,9 @@ class PlayCard(Action):
 
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
         battle_state.play_card(self.card_index)
+    
+    def __repr__(self) -> str:
+        return f"Play card {self.card_index} from your hand"
 
 class NoAction(Action):
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
@@ -57,3 +60,6 @@ class NoAction(Action):
 class EndAgentTurn(Action):
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState) -> None:
         battle_state.end_agent_turn()
+    
+    def __repr__(self) -> str:
+        return "End turn"
