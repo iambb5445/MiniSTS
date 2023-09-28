@@ -4,6 +4,7 @@ import time
 from ggpa.ggpa import GGPA
 from action.action import EndAgentTurn, PlayCard
 from enum import StrEnum
+from auth import GPT_AUTH
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game import GameState
@@ -49,7 +50,7 @@ class ChatGPTBot(GGPA):
         # Translate from OpenAI's dict to a single string input
         return "\n".join([message["content"] for message in openai_messages])
 
-    API_KEY = '' # redacted
+    API_KEY = GPT_AUTH # redacted
 
     def __init__(self, model_name: ChatGPTBot.ModelName):
         super().__init__("ChatGPT")
