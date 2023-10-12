@@ -53,13 +53,19 @@ class AndAgentTargeted(AgentTargeted):
     def __repr__(self) -> str:
         return ' and '.join([targeted.__repr__() for targeted in self.targeted_set])
 
-class DealDamage(AgentTargeted):
+class DealAttackDamage(AgentTargeted):
     def __init__(self, val: Value):
         super().__init__(val)
         self.val = val
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
-        target.get_damaged(self.val.get())
+        amount = self.val.get()
+        #amount += by.status_effects.get(StatusEffect.STRENGTH, 0)
+        #if target.status_effects.get(StatusEffect.VULNERABLE, 0) > 0:
+        #    amount *= 1.5
+        #if by.status_effects.get(StatusEffect.WEAK, 0) > 0: # TODO ORDER
+        #    amount *= 0.75
+        target.get_damaged(round(amount))
 
 class AddBlock(AgentTargeted):
     def __init__(self, val: Value):

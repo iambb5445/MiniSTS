@@ -9,7 +9,7 @@ from agent import AcidSlimeSmall, SpikeSlimeSmall, JawWorm
 from card import CardGen, Card
 from ggpa.backtrack import BacktrackBot
 from value import ConstValue, UpgradableOnce
-from action.agent_targeted_action import DealDamage
+from action.agent_targeted_action import DealAttackDamage
 from target.agent_target import ChooseAgentTarget, AgentSet, AllAgentsTarget
 
 def main():
@@ -22,15 +22,15 @@ def main():
     card_lists: list[tuple[str, list[Card]]] = [
         ("Starter", []),
         ("Cleave", [CardGen.Cleave()]),
-        ("BidDamage", [Card("BigDamage", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(100, 110)).To(ChooseAgentTarget(AgentSet.ENEMY)))]),
-        ("WinCard", [Card("Win", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(100, 110)).To(AllAgentsTarget(AgentSet.ENEMY)))]),
-        ("WinCard_10", [Card("Win", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(100, 110)).To(AllAgentsTarget(AgentSet.ENEMY)))] * 10),
-        ("NothingCard", [Card("DoesNothing", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(0, 0)).To(AllAgentsTarget(AgentSet.ENEMY)))]),
-        ("NothingCard_10", [Card("DoesNothing", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealDamage(UpgradableOnce(0, 0)).To(AllAgentsTarget(AgentSet.ENEMY)))] * 10),
+        ("BidDamage", [Card("BigDamage", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(100, 110)).To(ChooseAgentTarget(AgentSet.ENEMY)))]),
+        ("WinCard", [Card("Win", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(100, 110)).To(AllAgentsTarget(AgentSet.ENEMY)))]),
+        ("WinCard_10", [Card("Win", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(100, 110)).To(AllAgentsTarget(AgentSet.ENEMY)))] * 10),
+        ("NothingCard", [Card("DoesNothing", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(0, 0)).To(AllAgentsTarget(AgentSet.ENEMY)))]),
+        ("NothingCard_10", [Card("DoesNothing", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(0, 0)).To(AllAgentsTarget(AgentSet.ENEMY)))] * 10),
     ]
     for name, card_list in card_lists:
         for _ in tqdm(range(test_count)):
-            game_state = GameState(Character.IRON_CLAD, BacktrackBot(3), 0)
+            game_state = GameState(Character.IRON_CLAD, BacktrackBot(3, False), 0)
             game_state.add_to_deck(*card_list)
             battle_state = BattleState(game_state, AcidSlimeSmall(game_state), SpikeSlimeSmall(game_state), JawWorm(game_state), verbose=Verbose.NO_LOG)
             battle_state.run()

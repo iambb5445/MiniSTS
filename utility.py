@@ -132,3 +132,10 @@ class UserInput:
                 return False
             else:
                 print("Invalid value\nPlease enter one of [n or N for no] or [y or Y for yes].")
+
+class Broadcast:
+    def __init__(self):
+        self.listeners = {}
+
+    def subscribe(self):
+        pass
