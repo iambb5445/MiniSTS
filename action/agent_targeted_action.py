@@ -1,6 +1,7 @@
 from __future__ import annotations
 from value import Value
 from config import StatusEffect
+from utility import Event
 from typing import TYPE_CHECKING
 from action.action import Action
 if TYPE_CHECKING:
@@ -54,18 +55,39 @@ class AndAgentTargeted(AgentTargeted):
         return ' and '.join([targeted.__repr__() for targeted in self.targeted_set])
 
 class DealAttackDamage(AgentTargeted):
+    event: Event[int, tuple[Agent, GameState, BattleState, Agent]] = Event()
     def __init__(self, val: Value):
         super().__init__(val)
         self.val = val
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
+        self.event.broadcast_before((by, game_state, battle_state, target))
         amount = self.val.get()
-        #amount += by.status_effects.get(StatusEffect.STRENGTH, 0)
-        #if target.status_effects.get(StatusEffect.VULNERABLE, 0) > 0:
-        #    amount *= 1.5
-        #if by.status_effects.get(StatusEffect.WEAK, 0) > 0: # TODO ORDER
-        #    amount *= 0.75
+        amount = self.event.broadcast_apply(amount, (by, game_state, battle_state, target))
         target.get_damaged(round(amount))
+        self.event.broadcast_after((by, game_state, battle_state, target))
+
+def strength_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    by, _, _, _ = additional_info
+    amount += by.status_effects.get(StatusEffect.STRENGTH, 0)
+    return amount
+
+def vulnerable_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    _, _, _, target = additional_info
+    if target.status_effects.get(StatusEffect.VULNERABLE, 0) > 0:
+        amount = int(amount * 1.5)
+    return amount
+
+def weak_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    by, _, _, _ = additional_info
+    if by.status_effects.get(StatusEffect.WEAK, 0) > 0:
+        amount = int(amount * 0.75)
+    return amount
+
+# TODO apply
+DealAttackDamage.event.subscribe_values(strength_apply)
+DealAttackDamage.event.subscribe_values(vulnerable_apply)
+DealAttackDamage.event.subscribe_values(weak_apply)
 
 class AddBlock(AgentTargeted):
     def __init__(self, val: Value):

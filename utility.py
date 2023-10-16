@@ -133,9 +133,41 @@ class UserInput:
             else:
                 print("Invalid value\nPlease enter one of [n or N for no] or [y or Y for yes].")
 
-class Broadcast:
-    def __init__(self):
-        self.listeners = {}
+ValType = TypeVar("ValType")
+InfoType = TypeVar("InfoType")
 
-    def subscribe(self):
-        pass
+class Broadcast(Generic[ValType, InfoType]):
+    def __init__(self):
+        self.listeners: list[Callable[[ValType, InfoType], ValType]] = []
+
+    def subscribe(self, func: Callable[[ValType, InfoType], ValType], order: int = -1):
+        self.listeners.insert(order, func)
+
+    def broadcast_apply(self, value: ValType, additional_info: InfoType) -> ValType:
+        for listener in self.listeners:
+            value = listener(value, additional_info)
+        return value
+    
+class Event(Generic[ValType, InfoType]):
+    def __init__(self):
+        self.before: Broadcast[None, InfoType] = Broadcast()
+        self.after: Broadcast[None, InfoType] = Broadcast()
+        self.values: Broadcast[ValType, InfoType] = Broadcast()
+    
+    def subscribe_before(self, func: Callable[[None, InfoType], None], order: int = -1):
+        self.before.subscribe(func)
+    
+    def subscribe_after(self, func: Callable[[None, InfoType], None], order: int = -1):
+        self.after.subscribe(func)
+
+    def subscribe_values(self, func: Callable[[ValType, InfoType], ValType], order: int = -1):
+        self.values.subscribe(func)
+
+    def broadcast_before(self, additional_info: InfoType) -> None:
+        self.before.broadcast_apply(None, additional_info)
+    
+    def broadcast_after(self, additional_info: InfoType) -> None:
+        self.after.broadcast_apply(None, additional_info)
+    
+    def broadcast_apply(self, value: ValType, additional_info: InfoType) -> ValType:
+        return self.values.broadcast_apply(value, additional_info)
