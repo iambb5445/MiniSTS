@@ -2,8 +2,13 @@ from tqdm import tqdm
 import pandas as pd
 import time
 import argparse
-import os.path
 from joblib import delayed, Parallel
+import sys
+import os.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 from game import GameState
 from battle import BattleState
 from config import Character, Verbose
@@ -30,33 +35,38 @@ def name_to_bot(name: str) -> GGPA:
         return ChatGPTBot(ChatGPTBot.ModelName.Instruct_Davinci)
     raise Exception("Bot name not recognized")
 
-def simulate_one(bot: GGPA):
+def simulate_one(index: int, bot: GGPA, path: str, verbose: Verbose):
     game_state = GameState(Character.IRON_CLAD, bot, 0)
     game_state.add_to_deck(CardGen.Cleave(), CardGen.Impervious(), CardGen.Anger(), CardGen.Armaments())
-    battle_state = BattleState(game_state, AcidSlimeSmall(game_state), SpikeSlimeSmall(game_state), JawWorm(game_state), verbose=Verbose.NO_LOG)
+    battle_state = BattleState(game_state, AcidSlimeSmall(game_state), SpikeSlimeSmall(game_state), JawWorm(game_state),
+                               verbose=verbose, log_filename=os.path.join(path, f'{index}_{bot.name}'))
     battle_state.run()
     return [bot.name, game_state.player.health, game_state.get_end_results() != -1]
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('test_count', type=int)
+    parser.add_argument('thread_count', type=int, nargs='?', default=1)
+    parser.add_argument('log_battles', type=bool, nargs='?', default=False)
     parser.add_argument('bots', nargs='+')
-    parser.add_argument('thread_count', type=int, nargs='?', const=1)
     args = parser.parse_args()
 
     test_count = args.test_count
     thread_count = args.thread_count
+    verbose = Verbose.LOG if args.log_battles else Verbose.NO_LOG
     bots: list[GGPA] = [name_to_bot(name) for name in args.bots]  
-    path = 'evaluation_results'
     bot_names = '_'.join([bot.name for bot in bots])
+    path = os.path.join('evaluation_results', f'{int(time.time())}_boteval_{test_count}_tests_{bot_names}')
+    os.makedirs(path)
     print(f'simulating {test_count} times, for {bot_names} - {thread_count} threads')
-    results_dataset = Parallel(n_jobs=thread_count)(delayed(simulate_one)(bot) for bot in bots for _ in tqdm(range(test_count)))
+    print(f'results can be found at {path}')
+    results_dataset = Parallel(n_jobs=thread_count)(delayed(simulate_one)(i, bots[i%len(bots)], path, verbose) for i in tqdm(range(test_count * len(bots))))
     assert isinstance(results_dataset, list), "Parallel jobs have not resulted in an output of type list"
     df = pd.DataFrame(
         results_dataset,
         columns=["BotName", "PlayerHealth", "Win"]
     )
-    df.to_csv(os.path.join(path, f"evaluation_on_{test_count}_tests_{bot_names}_{int(time.time())}.csv"), index=False)
+    df.to_csv(os.path.join(path, f"results.csv"), index=False)
 
 if __name__ == '__main__':
     main()

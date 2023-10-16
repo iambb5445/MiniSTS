@@ -2,6 +2,12 @@ from tqdm import tqdm
 import pandas as pd
 import time
 import argparse
+import sys
+import os.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 from game import GameState
 from battle import BattleState
 from config import Character, Verbose, CardType, Rarity

@@ -89,8 +89,6 @@ class BattleState:
     def play_card(self, card_index: int):
         assert card_index < len(self.hand) and card_index >= 0, "Card index {} out of range for hand {}".format(card_index, self.hand)
         card = self.hand.pop(card_index)
-        if self.verbose == Verbose.LOG:
-            print('Playing:\n{}'.format(card))
         card.play(self.game_state, self)
         if not self.is_present(card):
             self.discard_pile.append(card)
@@ -164,7 +162,7 @@ class BattleState:
         self.visualize()
         agent.play(self.game_state, self)
         assert agent.prev_action is not None, "Action taken is not recorded for agent {}".format(agent.name)
-        self.log(str(agent.prev_action))
+        self.log(str(agent.prev_action) + '\n')
         return True
 
     def _take_agent_turn(self, agent: Agent):
