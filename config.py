@@ -71,3 +71,4 @@ CHARACTER_NAME: dict[Character, str] = {
 class Verbose(Enum):
     NO_LOG = 0
     LOG = 1
+    FILE_LOG = 2

@@ -84,7 +84,7 @@ def weak_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState
         amount = int(amount * 0.75)
     return amount
 
-# TODO apply
+# TODO order
 DealAttackDamage.event.subscribe_values(strength_apply)
 DealAttackDamage.event.subscribe_values(vulnerable_apply)
 DealAttackDamage.event.subscribe_values(weak_apply)

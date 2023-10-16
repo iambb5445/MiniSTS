@@ -21,6 +21,7 @@ class Agent:
         self.block = 0
         self.status_effects:dict[StatusEffect, int] = {}
         self.name = name
+        self.prev_action: Action|None = None
     
     def set_name(self) -> None:
         raise NotImplementedError("Set name is not implemented for {}.".format(self.__class__.__name__))
@@ -64,12 +65,13 @@ class Agent:
     def apply_status(self, status: StatusEffect, amount: int):
         assert amount >= 0, "StatusEffect amount cannot be less than 0"
         self.status_effects[status] = STACK_BEHAVIOR[status](self.status_effects.get(status, 0), amount)
-    
+
     def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
         raise NotImplementedError("The \"_get_action\" method is not implemented for {}.".format(self.__class__.__name__))
     
     def play(self, game_state: GameState, battle_state: BattleState) -> None:
-        self._get_action(game_state, battle_state).play(self, game_state, battle_state)
+        self.prev_action = self._get_action(game_state, battle_state)
+        self.prev_action.play(self, game_state, battle_state)
     
     def __repr__(self) -> str:
         return "{}-hp:[{}/{}]-block:{}-status:{}".format(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import copy
+import os.path
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from agent import Enemy, Agent
@@ -11,7 +12,7 @@ from config import MAX_MANA, Verbose
 import random
 
 class BattleState:
-    def __init__(self, game_state: GameState, *enemies: Enemy, verbose: Verbose):
+    def __init__(self, game_state: GameState, *enemies: Enemy, verbose: Verbose, log_filename: str|None = None):
         self.player = game_state.player
         self.enemies = [enemy for enemy in enemies]
         self.game_state = game_state
@@ -24,6 +25,7 @@ class BattleState:
         self.hand: list[Card] = []
         self.exhaust_pile: list[Card] = []
         self.verbose = verbose
+        self.log_filename = log_filename
 
     def copy_undeterministic(self) -> BattleState:
         battle_state_copy = copy.deepcopy(self)
@@ -118,29 +120,34 @@ class BattleState:
         self.remove_card(card)
         self.exhaust_pile.append(card)
     
+    def log(self, log: str):
+        if self.verbose == Verbose.NO_LOG:
+            return
+        if self.log_filename is None:
+            print(log)
+        else:
+            with open(self.log_filename, 'a') as f:
+                f.write(log)
+    
     def visualize(self):
         if self.verbose == Verbose.NO_LOG:
             return
-        print("*Turn {} - {}*".format(self.turn, "Player" if self.turn_phase == 0 else "Enemy {}".format(self.turn_phase-1)))
-        print("mana: {}/{}".format(self.mana, self.game_state.max_mana))
-        print(self.player)
-        for i, enemy in enumerate(self.enemies):
-            intention: Action = enemy.get_intention(self.game_state, self)
-            print('{}:{}---{}'.format(i, enemy, intention))
-        print("exhaust pile: ", end=' ')
-        for i, card in enumerate(self.exhaust_pile):
-            print('{}:{}'.format(i, card.get_name()), end=' ')
-        print("\ndiscard pile: ", end=' ')
-        for i, card in enumerate(self.discard_pile):
-            print('{}:{}'.format(i, card.get_name()), end=' ')
-        print("\ndraw pile: ", end=' ')
+        log = ''
+        log += "*Turn {} - {}*\n".format(self.turn, "Player" if self.turn_phase == 0 else "Enemy {}".format(self.turn_phase-1))
+        log += "mana: {}/{}\n".format(self.mana, self.game_state.max_mana)
+        log += str(self.player) + '\n'
+        log += '\n'.join('{}:{}---{}'.format(i, enemy, enemy.get_intention(self.game_state, self)) for i, enemy in enumerate(self.enemies))
+        log += "exhaust pile: "
+        log += ' '.join(['{}:{}'.format(i, card.get_name()) for i, card in enumerate(self.exhaust_pile)]) + '\n'
+        log += "discard pile: "
+        log += ' '.join(['{}:{}'.format(i, card.get_name()) for i, card in enumerate(self.discard_pile)]) + '\n'
+        log += "draw pile: "
         sorted_draw: list[Card] = sorted(self.draw_pile, key=lambda card: repr(card))
-        for i, card in enumerate(sorted_draw):
-            print('{}:{}'.format(i, card.get_name()), end=' ')
-        print("\nhand: ", end=' ')
-        for i, card in enumerate(self.hand):
-            print('{}:{}'.format(i, card.get_name()), end=' ')
-        print()
+        log += ' '.join('{}:{}'.format(i, card.get_name()) for i, card in enumerate(sorted_draw)) + '\n'
+        log += "hand: "
+        log += ' '.join(['{}:{}'.format(i, card.get_name()) for i, card in enumerate(self.hand)]) + '\n'
+        self.log(log)
+        
 
     def end_agent_turn(self):
         self.agent_turn_ended = True
@@ -156,6 +163,8 @@ class BattleState:
             return False
         self.visualize()
         agent.play(self.game_state, self)
+        assert agent.prev_action is not None, "Action taken is not recorded for agent {}".format(agent.name)
+        self.log(str(agent.prev_action))
         return True
 
     def _take_agent_turn(self, agent: Agent):
@@ -211,13 +220,14 @@ class BattleState:
             if not enemy.is_dead():
                 return 0
         return 1
-
+    
+    def initiate_log(self):
+        if self.verbose == Verbose.LOG and self.log_filename is not None:
+            assert not os.path.isfile(self.log_filename), "log file already exists: {}".format(self.log_filename)
+    
     def run(self):
+        self.initiate_log()
         while not self.ended():
             self.take_turn()
         self.player.clean_up()
-        if self.verbose == Verbose.LOG:
-            if self.get_end_result() == 1:
-                print("WIN")
-            else:
-                print("LOSE")
+        self.log("WIN" if self.get_end_result() == 1 else "LOSE")
