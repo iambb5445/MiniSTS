@@ -39,7 +39,7 @@ def simulate_one(index: int, bot: GGPA, path: str, verbose: Verbose):
     game_state = GameState(Character.IRON_CLAD, bot, 0)
     game_state.add_to_deck(CardGen.Cleave(), CardGen.Impervious(), CardGen.Anger(), CardGen.Armaments())
     battle_state = BattleState(game_state, AcidSlimeSmall(game_state), SpikeSlimeSmall(game_state), JawWorm(game_state),
-                               verbose=verbose, log_filename=os.path.join(path, f'{index}_{bot.name}'))
+                               verbose=verbose, log_filename=os.path.join(path, f'{index}_{bot.name}.log'))
     battle_state.run()
     return [bot.name, game_state.player.health, game_state.get_end_results() != -1]
 

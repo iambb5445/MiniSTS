@@ -47,8 +47,8 @@ class Card:
         return "{}{}".format(self.name, "+"*self.upgrade_count)
     
     def __repr__(self) -> str:
-        return "-{}-cost:{}-{}-{}-{}\n-".format(self.get_name(), self.mana_cost, self.card_type, self.rarity, self.character) + \
-            "\n-".join([action.__repr__() for action in self.actions])
+        return "{}-cost:{}-{}-{}\n-".format(self.get_name(), self.mana_cost.peek(), self.card_type, self.rarity) + \
+            "\n-".join(['' + action.__repr__() for action in self.actions])
 
 class CardGen:
     Strike = lambda: Card("Strike", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(6, 9)).To(ChooseAgentTarget(AgentSet.ENEMY)))

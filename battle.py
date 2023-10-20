@@ -134,7 +134,7 @@ class BattleState:
         log += "*Turn {} - {}*\n".format(self.turn, "Player" if self.turn_phase == 0 else "Enemy {}".format(self.turn_phase-1))
         log += "mana: {}/{}\n".format(self.mana, self.game_state.max_mana)
         log += str(self.player) + '\n'
-        log += '\n'.join('{}:{}---{}'.format(i, enemy, enemy.get_intention(self.game_state, self)) for i, enemy in enumerate(self.enemies))
+        log += '\n'.join('{}:{}---{}'.format(i, enemy, enemy.get_intention(self.game_state, self)) for i, enemy in enumerate(self.enemies)) + '\n'
         log += "exhaust pile: "
         log += ' '.join(['{}:{}'.format(i, card.get_name()) for i, card in enumerate(self.exhaust_pile)]) + '\n'
         log += "discard pile: "
@@ -145,7 +145,6 @@ class BattleState:
         log += "hand: "
         log += ' '.join(['{}:{}'.format(i, card.get_name()) for i, card in enumerate(self.hand)]) + '\n'
         self.log(log)
-        
 
     def end_agent_turn(self):
         self.agent_turn_ended = True
@@ -222,6 +221,9 @@ class BattleState:
     def initiate_log(self):
         if self.verbose == Verbose.LOG and self.log_filename is not None:
             assert not os.path.isfile(self.log_filename), "log file already exists: {}".format(self.log_filename)
+        self.log(f'version {1.0}\n')
+        for card in self.game_state.deck:
+            self.log(f'{card}\n')
     
     def run(self):
         self.initiate_log()

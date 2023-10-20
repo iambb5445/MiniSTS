@@ -79,5 +79,5 @@ class RandomUniformRange(Value):
             self.value = random.randrange(self.begin, self.end)
         return self.value
 
-    def negative(self) -> LinearUpgradable:
-        return LinearUpgradable(self.end * -1, self.begin * -1)
+    def negative(self) -> RandomUniformRange:
+        return RandomUniformRange(self.end * -1, self.begin * -1)
