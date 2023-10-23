@@ -1,12 +1,14 @@
 from __future__ import annotations
 import openai
 import time
+import json
+from enum import StrEnum
 from ggpa.ggpa import GGPA
 from action.action import EndAgentTurn, PlayCard
-from enum import StrEnum
 from auth import GPT_AUTH
+from utility import get_unique_filename
 from ggpa.prompt import get_action_prompt, get_agent_target_prompt, get_card_target_prompt
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game import GameState
     from battle import BattleState
@@ -65,7 +67,7 @@ class ChatGPTBot(GGPA):
     def __init__(self, model_name: ChatGPTBot.ModelName):
         super().__init__("ChatGPT")
         self.model_name = model_name
-        self.history = []
+        self.clear_history()
 
     def get_integer_response(self, min: int, max: int) -> int:
         while True:
@@ -108,3 +110,10 @@ class ChatGPTBot(GGPA):
         value = self.get_integer_response(0, len(card_list)-1)
         return card_list[value]
     
+    def dump_history(self, filename):
+        filename = get_unique_filename(filename, 'log')
+        with open(filename, "w") as file:
+            json.dump(self.history, file, indent=4)
+    
+    def clear_history(self):
+        self.history = []

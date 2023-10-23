@@ -1,6 +1,6 @@
 from __future__ import annotations
 from value import Value
-from config import StatusEffect
+from status_effecs import StatusEffect
 from utility import Event
 from typing import TYPE_CHECKING
 from action.action import Action

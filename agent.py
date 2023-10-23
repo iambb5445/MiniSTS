@@ -6,7 +6,8 @@ from utility import RoundRobin, RoundRobinRandomStart, ItemSet, ItemSequence, Ra
 from action.action import EndAgentTurn
 from action.agent_targeted_action import DealAttackDamage, AddBlock, ApplyStatus
 from target.agent_target import PlayerAgentTarget, SelfAgentTarget
-from config import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR, MAX_BLOCK, CHARACTER_NAME
+from config import MAX_BLOCK, CHARACTER_NAME
+from status_effecs import StatusEffect, STACK_BEHAVIOR, END_TURN_BEHAVIOR
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from battle import BattleState
@@ -111,13 +112,13 @@ class AcidSlimeSmall(Enemy):
                 DealAttackDamage(ConstValue(3 if game_state.ascention < 2 else 4)).To(PlayerAgentTarget()),
                 ApplyStatus(ConstValue(1), StatusEffect.WEAK).To(PlayerAgentTarget())
             )
-        super().__init__("AcidSlime (S)", max_health.get(), action_set)
+        super().__init__("AcidSlime(S)", max_health.get(), action_set)
 
 class SpikeSlimeSmall(Enemy):
     def __init__(self, game_state: GameState):
         max_health = RandomUniformRange(10, 14) if game_state.ascention < 7 else RandomUniformRange(11, 15)
         action_set: ItemSet[Action] = RoundRobin(0, DealAttackDamage(ConstValue(5 if game_state.ascention < 2 else 6)).To(PlayerAgentTarget()))
-        super().__init__("SpikeSlime (S)", max_health.get(), action_set)
+        super().__init__("SpikeSlime(S)", max_health.get(), action_set)
 
 class JawWorm(Enemy):
     def __init__(self, game_state: GameState):

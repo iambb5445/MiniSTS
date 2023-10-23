@@ -19,6 +19,9 @@ class GameState:
         for card in cards:
             self.deck.append(card)
 
+    def set_deck(self, *cards: Card):
+        self.deck = [card for card in cards]
+
     def get_end_results(self):
         if self.player.is_dead():
             return -1

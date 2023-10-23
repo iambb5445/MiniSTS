@@ -1,6 +1,7 @@
 from typing import TypeVar, Generic
 from typing import Callable
 import random
+import os.path
 
 T = TypeVar("T")
 
@@ -171,3 +172,10 @@ class Event(Generic[ValType, InfoType]):
     
     def broadcast_apply(self, value: ValType, additional_info: InfoType) -> ValType:
         return self.values.broadcast_apply(value, additional_info)
+    
+def get_unique_filename(filename: str, ext: str):
+    unique_filename = f'{filename}.{ext}'
+    index = 0
+    while os.path.isfile(unique_filename):
+        unique_filename = f'{filename}_{index}.{ext}'
+    return unique_filename

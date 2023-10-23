@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from card import Card
     from action.action import Action
 from config import MAX_MANA, Verbose
+from utility import get_unique_filename
 
 import random
 
@@ -220,7 +221,7 @@ class BattleState:
     
     def initiate_log(self):
         if self.verbose == Verbose.LOG and self.log_filename is not None:
-            assert not os.path.isfile(self.log_filename), "log file already exists: {}".format(self.log_filename)
+            self.log_filename = get_unique_filename(self.log_filename, 'log')
         self.log(f'version {1.0}\n')
         for card in self.game_state.deck:
             self.log(f'{card}\n')

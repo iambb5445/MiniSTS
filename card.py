@@ -4,7 +4,8 @@ from target.card_target import CardPile, SelfCardTarget, ChooseCardTarget
 from action.action import Action, AddMana
 from action.agent_targeted_action import DealAttackDamage, ApplyStatus, AddBlock
 from action.card_targeted_action import CardTargetedL1, Exhaust, AddCopy, UpgradeCard
-from config import CardType, Character, Rarity, StatusEffect
+from config import CardType, Character, Rarity
+from status_effecs import StatusEffect
 from value import Value, ConstValue, UpgradableOnce, LinearUpgradable
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -72,3 +73,18 @@ class CardRepo:
             return starter
         else:
             raise Exception("Undefined started deck for character {}.".format(character))
+    
+    @staticmethod
+    def anonymize_deck(cards: list[Card]) -> list[Card]:
+        anonymized = {
+            'Strike': 'Charge',
+            'Defend': 'Brace',
+            'Bash': 'Knock'
+        }
+        deck = [card for card in cards]
+        for card in deck:
+            if card.name in anonymized:
+                card.name = anonymized[card.name]
+            else:
+                raise Exception(f'Unrecognized card name {card.name}')
+        return deck
