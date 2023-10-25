@@ -1,6 +1,6 @@
 from __future__ import annotations
-from value import Value
-from status_effecs import StatusEffect
+from value import Value, ConstValue
+from status_effecs import StatusEffect, strength_apply, vigor_apply, vulnerable_apply, weak_apply
 from utility import Event
 from typing import TYPE_CHECKING
 from action.action import Action
@@ -56,38 +56,19 @@ class AndAgentTargeted(AgentTargeted):
 
 class DealAttackDamage(AgentTargeted):
     event: Event[int, tuple[Agent, GameState, BattleState, Agent]] = Event()
-    def __init__(self, val: Value):
+    def __init__(self, val: Value, times: Value = ConstValue(1)):
         super().__init__(val)
         self.val = val
+        self.times = times
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
         self.event.broadcast_before((by, game_state, battle_state, target))
         amount = self.val.get()
         amount = self.event.broadcast_apply(amount, (by, game_state, battle_state, target))
-        target.get_damaged(round(amount))
+        times = self.times.get()
+        for _ in range(times):
+            target.get_damaged(round(amount))
         self.event.broadcast_after((by, game_state, battle_state, target))
-
-def strength_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
-    by, _, _, _ = additional_info
-    amount += by.status_effects.get(StatusEffect.STRENGTH, 0)
-    return amount
-
-def vulnerable_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
-    _, _, _, target = additional_info
-    if target.status_effects.get(StatusEffect.VULNERABLE, 0) > 0:
-        amount = int(amount * 1.5)
-    return amount
-
-def weak_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
-    by, _, _, _ = additional_info
-    if by.status_effects.get(StatusEffect.WEAK, 0) > 0:
-        amount = int(amount * 0.75)
-    return amount
-
-# TODO order
-DealAttackDamage.event.subscribe_values(strength_apply)
-DealAttackDamage.event.subscribe_values(vulnerable_apply)
-DealAttackDamage.event.subscribe_values(weak_apply)
 
 class AddBlock(AgentTargeted):
     def __init__(self, val: Value):
@@ -108,3 +89,9 @@ class ApplyStatus(AgentTargeted):
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "({}-{})".format('-'.join([value.__repr__() for value in self.values]), self.status_effect)
+
+# TODO order
+DealAttackDamage.event.subscribe_values(strength_apply)
+DealAttackDamage.event.subscribe_values(vigor_apply)
+DealAttackDamage.event.subscribe_values(vulnerable_apply)
+DealAttackDamage.event.subscribe_values(weak_apply)

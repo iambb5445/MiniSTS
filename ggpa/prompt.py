@@ -28,6 +28,7 @@ Every <STATUS_EFFECT> has a value x. The value of a <STATUS_EFFECT> can stack, m
 - <WEAK>: Deal 25% less attack damage for x turns.
 - <ENTANGLE>: Target cannot play any attacks for 1 turn. This effect will not stack.
 - <STRENGTH>: Deal x more attack damage.
+- <VIGOR>: Deal x more attack damage only on the next attack card you play (this turn or after).
 When any creature gets attacked, first it loses <BLOCK>. Whatever damage is left, it loses as <HP>.
 Any creature that reaches a <HP> of zero or less, is removed from the game.
 If your character is removed from the game, you lose the game.

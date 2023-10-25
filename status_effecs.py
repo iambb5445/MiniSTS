@@ -1,6 +1,12 @@
+from __future__ import annotations
 from enum import StrEnum
 from config import MAX_STATUS
 from typing import Callable
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from battle import BattleState
+    from game import GameState
+    from agent import Agent
 
 class StatusEffect(StrEnum):
     VULNERABLE = "Vulnerable"
@@ -36,3 +42,27 @@ END_TURN_BEHAVIOR: dict[StatusEffect, Callable[[int], int]] = {
     StatusEffect.STRENGTH: no_change,
     StatusEffect.VIGOR: no_change
 }
+
+def strength_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    by, _, _, _ = additional_info
+    amount += by.status_effects.get(StatusEffect.STRENGTH, 0)
+    return amount
+
+def vigor_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    by, _, _, _ = additional_info
+    amount += by.status_effects.get(StatusEffect.VIGOR, 0)
+    # TODO this should be applied for multiple damages on the same card
+    by.remove_status(StatusEffect.VIGOR)
+    return amount
+
+def vulnerable_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    _, _, _, target = additional_info
+    if target.status_effects.get(StatusEffect.VULNERABLE, 0) > 0:
+        amount = int(amount * 1.5)
+    return amount
+
+def weak_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    by, _, _, _ = additional_info
+    if by.status_effects.get(StatusEffect.WEAK, 0) > 0:
+        amount = int(amount * 0.75)
+    return amount

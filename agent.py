@@ -45,7 +45,10 @@ class Agent:
     def decrease_status(self):
         for key in self.status_effects:
             self.status_effects[key] = END_TURN_BEHAVIOR[key](self.status_effects[key])
-        self.status_effects = dict([(effect, value) for effect, value in self.status_effects.items() if value > 0])
+    
+    def remove_status(self, status_effect: StatusEffect):
+        self.status_effects = dict([(effect, value) for effect, value in self.status_effects.items()
+                                    if effect != status_effect])
 
     def clean_up(self):
         self.status_effects = {}

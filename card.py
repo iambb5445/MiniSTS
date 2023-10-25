@@ -61,6 +61,9 @@ class CardGen:
     Armaments = lambda: Card("Armament", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, AddBlock(ConstValue(5)).To(SelfAgentTarget()), UpgradeCard().To(ChooseCardTarget(CardPile.HAND)))
     Cleave = lambda: Card("Cleave", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealAttackDamage(UpgradableOnce(8, 11)).To(AllAgentsTarget(AgentSet.ENEMY)))
     Impervious = lambda: Card("Impervious", CardType.SKILL, ConstValue(2), Character.IRON_CLAD, Rarity.RARE, AddBlock(UpgradableOnce(30, 40)).To(SelfAgentTarget()), Exhaust().To(SelfCardTarget()))
+    # NEW CARDS
+    Stimulate = lambda: Card("Stimulate", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, ApplyStatus(ConstValue(3), StatusEffect.VIGOR).To(SelfAgentTarget()))
+    Batter = lambda: Card("Batter", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealAttackDamage(ConstValue(1), ConstValue(5)).To(ChooseAgentTarget(AgentSet.ENEMY)))
 
 class CardRepo:
     @staticmethod
