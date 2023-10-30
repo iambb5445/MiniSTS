@@ -55,9 +55,9 @@ class ChooseAgentTarget(AgentTarget):
         self.count = count
     
     def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
-        agent_list = get_agent_set_data(self.among, battle_state)
-        name = get_agent_set_name(self.among)
-        agent = battle_state.player.bot.choose_agent_target(battle_state, name, agent_list)
+        agent_list: list[Agent] = get_agent_set_data(self.among, battle_state)
+        name: str = get_agent_set_name(self.among)
+        agent = battle_state.get_player_agent_target(name, agent_list)
         return [agent]
     
     def __repr__(self) -> str:

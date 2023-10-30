@@ -13,7 +13,7 @@ from game import GameState
 from battle import BattleState
 from config import Character, Verbose
 from agent import AcidSlimeSmall, SpikeSlimeSmall, JawWorm
-from card import CardGen
+from card import CardGen, Card
 from ggpa.ggpa import GGPA
 from ggpa.random_bot import RandomBot
 from ggpa.backtrack import BacktrackBot
@@ -37,9 +37,16 @@ def name_to_bot(name: str) -> GGPA:
 
 def simulate_one(index: int, bot: GGPA, path: str, verbose: Verbose):
     game_state = GameState(Character.IRON_CLAD, bot, 0)
-    game_state.add_to_deck(CardGen.Cleave(), CardGen.Impervious(), CardGen.Anger(), CardGen.Armaments())
+    #basics: list[Card] = []
+    #basics += [CardGen.Strike() for _ in range(5)] # 5
+    #basics += [CardGen.Defend() for _ in range(4)]
+    #game_state.set_deck(*basics)
+    #game_state.add_to_deck(CardGen.Cleave(), CardGen.Impervious(), CardGen.Anger(), CardGen.Armaments())
+    #game_state.add_to_deck(CardGen.Batter())
+    #game_state.add_to_deck(CardGen.Stimulate())
+    #game_state.add_to_deck(CardGen.Batter(), CardGen.Stimulate())
     battle_state = BattleState(game_state, AcidSlimeSmall(game_state), SpikeSlimeSmall(game_state), JawWorm(game_state),
-                               verbose=verbose, log_filename=os.path.join(path, f'{index}_{bot.name}.log'))
+                               verbose=verbose, log_filename=os.path.join(path, f'{index}_{bot.name}'))
     battle_state.run()
     return [bot.name, game_state.player.health, game_state.get_end_results() != -1]
 
@@ -47,16 +54,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('test_count', type=int)
     parser.add_argument('thread_count', type=int, nargs='?', default=1)
-    parser.add_argument('log_battles', type=bool, nargs='?', default=False)
     parser.add_argument('bots', nargs='+')
+    parser.add_argument('--name', type=str, default="")
+    parser.add_argument('--log', action=argparse.BooleanOptionalAction)
     args = parser.parse_args()
 
     test_count = args.test_count
     thread_count = args.thread_count
-    verbose = Verbose.LOG if args.log_battles else Verbose.NO_LOG
+    custom_name = args.name
+    verbose = Verbose.LOG if args.log else Verbose.NO_LOG
     bots: list[GGPA] = [name_to_bot(name) for name in args.bots]  
     bot_names = '_'.join([bot.name for bot in bots])
-    path = os.path.join('evaluation_results', f'{int(time.time())}_boteval_{test_count}_tests_{bot_names}')
+    path = os.path.join('evaluation_results', f'{int(time.time())}_{custom_name}_boteval_{test_count}_tests_{bot_names}')
     os.makedirs(path)
     print(f'simulating {test_count} times, for {bot_names} - {thread_count} threads')
     print(f'results can be found at {path}')

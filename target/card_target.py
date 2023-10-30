@@ -62,11 +62,11 @@ class ChooseCardTarget(CardTarget):
         self.count = count
     
     def get(self, by: Card, battle_state: BattleState) -> list[Card]:
-        card_list = get_card_pile_data(self.among, battle_state)
-        name = get_card_pile_name(self.among)
+        card_list: list[Card] = get_card_pile_data(self.among, battle_state)
+        name: str = get_card_pile_name(self.among)
         if len(card_list) == 0:
             raise CardTarget.NoneAvailabeException()
-        card = battle_state.player.bot.choose_card_target(battle_state, name, card_list)
+        card = battle_state.get_player_card_target(name, card_list)
         return [card]
     
     def __repr__(self) -> str:

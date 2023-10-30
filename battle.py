@@ -118,7 +118,17 @@ class BattleState:
     def exhaust(self, card: Card):
         self.remove_card(card)
         self.exhaust_pile.append(card)
+
+    def get_player_card_target(self, name: str, card_list: list[Card]) -> Card:
+        card = self.player.bot.choose_card_target(self, name, card_list)
+        self.log(f"Card choice {repr(card)}")
+        return card
     
+    def get_player_agent_target(self, name: str, agent_list: list[Agent]) -> Agent:
+        agent = self.player.bot.choose_agent_target(self, name, agent_list)
+        self.log(f"Agent choice {repr(agent)}")
+        return agent
+
     def log(self, log: str):
         if self.verbose == Verbose.NO_LOG:
             return
