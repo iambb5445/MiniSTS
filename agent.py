@@ -41,14 +41,19 @@ class Agent:
     
     def clear_block(self):
         self.block = 0
+
+    def change_status(self, status: StatusEffect, new_value: int):
+        self.status_effects[status] = new_value
+        self.status_effects = dict([(effect, value) for effect, value in self.status_effects.items()
+                                    if value > 0])
         
     def decrease_status(self):
         for key in self.status_effects:
-            self.status_effects[key] = END_TURN_BEHAVIOR[key](self.status_effects[key])
+            self.change_status(key, END_TURN_BEHAVIOR[key](self.status_effects[key]))
+        
     
     def remove_status(self, status_effect: StatusEffect):
-        self.status_effects = dict([(effect, value) for effect, value in self.status_effects.items()
-                                    if effect != status_effect])
+        self.change_status(status_effect, 0)
 
     def clean_up(self):
         self.status_effects = {}
@@ -68,7 +73,7 @@ class Agent:
     
     def apply_status(self, status: StatusEffect, amount: int):
         assert amount >= 0, "StatusEffect amount cannot be less than 0"
-        self.status_effects[status] = STACK_BEHAVIOR[status](self.status_effects.get(status, 0), amount)
+        self.change_status(status, STACK_BEHAVIOR[status](self.status_effects.get(status, 0), amount))
 
     def _get_action(self, game_state: GameState, battle_state: BattleState) -> Action:
         raise NotImplementedError("The \"_get_action\" method is not implemented for {}.".format(self.__class__.__name__))

@@ -121,12 +121,12 @@ class BattleState:
 
     def get_player_card_target(self, name: str, card_list: list[Card]) -> Card:
         card = self.player.bot.choose_card_target(self, name, card_list)
-        self.log(f"Card choice {repr(card)}")
+        self.log(f"Card choice {repr(card)}\n")
         return card
     
     def get_player_agent_target(self, name: str, agent_list: list[Agent]) -> Agent:
         agent = self.player.bot.choose_agent_target(self, name, agent_list)
-        self.log(f"Agent choice {repr(agent)}")
+        self.log(f"Agent choice {repr(agent)}\n")
         return agent
 
     def log(self, log: str):
@@ -138,9 +138,7 @@ class BattleState:
             with open(self.log_filename, 'a') as f:
                 f.write(log)
     
-    def visualize(self):
-        if self.verbose == Verbose.NO_LOG:
-            return
+    def get_visualization(self):
         log = ''
         log += "*Turn {} - {}*\n".format(self.turn, "Player" if self.turn_phase == 0 else "Enemy {}".format(self.turn_phase-1))
         log += "mana: {}/{}\n".format(self.mana, self.game_state.max_mana)
@@ -155,7 +153,12 @@ class BattleState:
         log += ' '.join('{}:{}'.format(i, card.get_name()) for i, card in enumerate(sorted_draw)) + '\n'
         log += "hand: "
         log += ' '.join(['{}:{}'.format(i, card.get_name()) for i, card in enumerate(self.hand)]) + '\n'
-        self.log(log)
+        return log
+    
+    def visualize(self):
+        if self.verbose == Verbose.NO_LOG:
+            return
+        self.log(self.get_visualization())
 
     def end_agent_turn(self):
         self.agent_turn_ended = True
@@ -241,4 +244,5 @@ class BattleState:
         while not self.ended():
             self.take_turn()
         self.player.clean_up()
-        self.log("WIN" if self.get_end_result() == 1 else "LOSE")
+        self.visualize()
+        self.log("WIN\n" if self.get_end_result() == 1 else "LOSE\n")
