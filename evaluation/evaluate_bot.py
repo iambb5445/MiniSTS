@@ -18,6 +18,7 @@ from ggpa.ggpa import GGPA
 from ggpa.random_bot import RandomBot
 from ggpa.backtrack import BacktrackBot
 from ggpa.chatgpt_bot import ChatGPTBot
+from ggpa.prompt2 import PromptOption
 
 def name_to_bot(name: str) -> GGPA:
     if name == 'r':
@@ -25,29 +26,38 @@ def name_to_bot(name: str) -> GGPA:
     if len(name) > 2 and name[0:2] == 'bt':
         depth = int(name[2:])
         return BacktrackBot(depth, True)
-    if name == 'gpt-t3.5':
-        return ChatGPTBot(ChatGPTBot.ModelName.GPT_Turbo_35)
-    if name == 'gpt-4':
-        return ChatGPTBot(ChatGPTBot.ModelName.GPT_4)
-    if name == 'gpt-it3.5':
-        return ChatGPTBot(ChatGPTBot.ModelName.Instruct_GPT_Turbo_35)
-    if name == 'gpt-idav':
-        return ChatGPTBot(ChatGPTBot.ModelName.Instruct_Davinci)
+    if len(name) > 3 and name[:3] == 'gpt':
+        _, model, prompt = name.split('-')
+        model_dict: dict[str, ChatGPTBot.ModelName] = {
+            't3.5': ChatGPTBot.ModelName.GPT_Turbo_35,
+            '4': ChatGPTBot.ModelName.GPT_4,
+            'it3.5': ChatGPTBot.ModelName.Instruct_GPT_Turbo_35,
+            'idav': ChatGPTBot.ModelName.Instruct_Davinci,
+        }
+        prompt_dict: dict[str, PromptOption] = {
+            'none': PromptOption.NONE,
+            'dag': PromptOption.DAG,
+            'cot': PromptOption.CoT,
+            'cotr': PromptOption.CoT_rev,
+        }
+        return ChatGPTBot(model_dict[model], prompt_dict[prompt])
     raise Exception("Bot name not recognized")
 
 def simulate_one(index: int, bot: GGPA, path: str, verbose: Verbose):
     game_state = GameState(Character.IRON_CLAD, bot, 0)
-    #basics: list[Card] = []
-    #basics += [CardGen.Strike() for _ in range(5)] # 5
-    #basics += [CardGen.Defend() for _ in range(4)]
-    #game_state.set_deck(*basics)
+    basics: list[Card] = []
+    basics += [CardGen.Strike() for _ in range(5)] # 5
+    basics += [CardGen.Defend() for _ in range(4)]
+    game_state.set_deck(*basics)
     #game_state.add_to_deck(CardGen.Cleave(), CardGen.Impervious(), CardGen.Anger(), CardGen.Armaments())
     #game_state.add_to_deck(CardGen.Batter())
     #game_state.add_to_deck(CardGen.Stimulate())
-    #game_state.add_to_deck(CardGen.Batter(), CardGen.Stimulate())
+    game_state.add_to_deck(CardGen.Batter(), CardGen.Stimulate())
     battle_state = BattleState(game_state, AcidSlimeSmall(game_state), SpikeSlimeSmall(game_state), JawWorm(game_state),
                                verbose=verbose, log_filename=os.path.join(path, f'{index}_{bot.name}'))
     battle_state.run()
+    if isinstance(bot, ChatGPTBot):
+        bot.dump_history(os.path.join(path, f'{index}_{bot.name}_history'))
     return [bot.name, game_state.player.health, game_state.get_end_results() != -1]
 
 def main():

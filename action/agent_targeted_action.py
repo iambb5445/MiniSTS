@@ -69,6 +69,12 @@ class DealAttackDamage(AgentTargeted):
         for _ in range(times):
             target.get_damaged(round(amount))
         self.event.broadcast_after((by, game_state, battle_state, target))
+    
+    def __repr__(self) -> str:
+        if self.times.peek() != 1:
+            return f"Deal {self.val.peek()} damage {repr(self.times.peek())} times"
+        else:
+            return f"Deal {self.val.peek()} damage"
 
 class AddBlock(AgentTargeted):
     def __init__(self, val: Value):
@@ -77,6 +83,9 @@ class AddBlock(AgentTargeted):
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
         target.gain_block(self.val.get())
+    
+    def __repr__(self) -> str:
+        return f"Add {self.val.peek()} block"
 
 class ApplyStatus(AgentTargeted):
     def __init__(self, val: Value, status_effect: StatusEffect):
@@ -88,7 +97,8 @@ class ApplyStatus(AgentTargeted):
         target.apply_status(self.status_effect, self.val.get())
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "({}-{})".format('-'.join([value.__repr__() for value in self.values]), self.status_effect)
+        return f"Apply {self.val.peek()} {str(self.status_effect)}"
+        # return self.__class__.__name__ + "({}-{})".format('-'.join([value.__repr__() for value in self.values]), self.status_effect)
 
 # TODO order
 DealAttackDamage.event.subscribe_values(strength_apply)
