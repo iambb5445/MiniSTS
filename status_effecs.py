@@ -51,9 +51,12 @@ def strength_apply(amount: int, additional_info: tuple[Agent, GameState, BattleS
 def vigor_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
     by, _, _, _ = additional_info
     amount += by.status_effects.get(StatusEffect.VIGOR, 0)
+    return amount
+
+def vigor_after(_, additional_info: tuple[Agent, GameState, BattleState, Agent]):
+    by, _, _, _ = additional_info
     # TODO this should be applied for multiple damages on the same card
     by.remove_status(StatusEffect.VIGOR)
-    return amount
 
 def vulnerable_apply(amount: int, additional_info: tuple[Agent, GameState, BattleState, Agent]):
     _, _, _, target = additional_info

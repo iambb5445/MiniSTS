@@ -58,13 +58,15 @@ class ChatGPTBot(GGPA):
     def ask_gpt(self) -> str:
         request = self.get_request()
         current = time.time()
-        prev = ChatGPTBot.call_timestamp.get(self.model_name, current)
-        est_tokens = len(request)/4
+        prev = ChatGPTBot.call_timestamp.get(self.model_name, current - 1000) # default: long time ago
+        est_tokens = 1200 # len(request)/4, but should sum up all len of all messages
         if self.model_name not in ChatGPTBot.call_timestamp or\
             ChatGPTBot.token_count[self.model_name] + est_tokens > ChatGPTBot.token_limit_per_minute[self.model_name]:
-            time.sleep(60 - (current - prev))
+            print(f'sleeping for {60 - min(current - prev, 60)}')
+            time.sleep(60 - min(current - prev, 60))
             ChatGPTBot.call_timestamp[self.model_name] = current
             ChatGPTBot.token_count[self.model_name] = 0
+        print(f'tokens: {ChatGPTBot.token_count[self.model_name]}, est: {est_tokens}')
         # print(self.get_request())
         # exit()
         if self.model_name in ChatGPTBot.CHAT_MODELS:

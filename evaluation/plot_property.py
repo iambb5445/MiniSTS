@@ -244,7 +244,6 @@ class Property(StrEnum):
     DecisionCount = 'Number of Decisions'
     BatterStimulateCombo = 'Stimulate-Batter Synergy'
     TurnCount = 'Number of Turns'
-    TurnCount2 = 'Number of Turns (Precision: 2)'
 
 def get_prop(prop: Property, data: LogData):
     if prop == Property.FinalPlayerHealth:
@@ -253,8 +252,6 @@ def get_prop(prop: Property, data: LogData):
         return len(data.turns)
     elif prop == Property.TurnCount:
         return data.turns[-1].turn
-    elif prop == Property.TurnCount2:
-        return int(data.turns[-1].turn / 2) * 2
     elif prop == Property.BatterStimulateCombo:
         ret = 0
         st_count = 0
@@ -278,7 +275,7 @@ def plot_boxplot(prop: Property, prop_dict: dict[str, list[int]]):
     results = list(prop_dict.values())
     plt.figure(figsize=(8, 6))
     plt.boxplot(results, labels=bots)
-    plt.title(f'Distribution of final {str(prop)} for Different Agents')
+    plt.title(f'Distribution of {str(prop)} for Different Agents')
     plt.xlabel('Agent')
     plt.ylabel(str(prop))
     plt.grid(True)
@@ -288,7 +285,7 @@ def plot_hist(prop: Property, prop_dict: dict[str, list[int]]):
     plt.figure(figsize=(8, 6))
     for bot_name, props in prop_dict.items():
         plt.hist(props, alpha=0.3, label=bot_name)
-    plt.title(f'Distribution of final {str(prop)} for Different Agents')
+    plt.title(f'Distribution of {str(prop)} for Different Agents')
     plt.xlabel(str(prop))
     plt.ylabel('Frequency')
     plt.legend()
@@ -332,6 +329,35 @@ def _plot_freq_stackedbar_prec(prop: Property, prop_dict: dict[str, list[int]], 
     plt.legend()
     plt.show()
 
+def plot_scatter_2d(prop1: Property, prop2: Property, prop_dict1: dict[str, list[int]], prop_dict2: dict[str, list[int]]):
+    bot_names = list(prop_dict1.keys())
+    plt.figure(figsize=(8, 6))
+    for bot_name in bot_names:
+        x = prop_dict1[bot_name]
+        y = prop_dict2[bot_name]
+        plt.scatter(x, y, label=bot_name, alpha=0.3)
+    plt.title(f'Distribution of {prop1}-{prop2} for Different Agents')
+    plt.xlabel(str(prop1))
+    plt.ylabel(str(prop2))
+    plt.legend()
+    plt.show()
+
+def plot_density_2d(prop1: Property, prop2: Property, prop_dict1: dict[str, list[int]], prop_dict2: dict[str, list[int]]):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    bot_names = list(prop_dict1.keys())
+    plt.figure(figsize=(8, 6))
+    for bot_name in bot_names:
+        x, y = prop_dict1[bot_name], prop_dict2[bot_name]
+        plt.scatter(x, y)
+    plt.legend(bot_names)
+    for bot_name in bot_names:
+        x, y = prop_dict1[bot_name], prop_dict2[bot_name]
+        sns.kdeplot(x=x, y=y, fill=True, alpha=0.1, linewidth=0.5)
+    plt.xlabel(str(prop1))
+    plt.ylabel(str(prop2))
+    plt.show()
+
 def get_prop_dict(prop: Property, dataset: list[tuple[int, str, LogData]]):
     prop_dict: dict[str, list[int]] = {}
     for id, bot_name, data in dataset:
@@ -344,8 +370,10 @@ def plot_prop(prop: Property, dataset: list[tuple[int, str, LogData]], plot_func
     prop_dict: dict[str, list[int]] = get_prop_dict(prop, dataset)
     plot_func(prop, prop_dict)
 
-def test_2d_plot(prop1: Property, prop2: Property, dataset: list[tuple[int, str, LogData]]):
-    pass
+def plot_prop_2d(prop1: Property, prop2: Property, dataset: list[tuple[int, str, LogData]], plot_func: Callable[[Property, Property, dict[str, list[int]], dict[str, list[int]]], None]):
+    prop_dict1: dict[str, list[int]] = get_prop_dict(prop1, dataset)
+    prop_dict2: dict[str, list[int]] = get_prop_dict(prop2, dataset)
+    plot_func(prop1, prop2, prop_dict1, prop_dict2)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -360,10 +388,11 @@ def main():
             continue
         dataset.append((id, bot_name, LogData.from_file(os.path.join(dirname, log_filename))))
     dataset.sort(key=lambda it: it[0])
-    plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot)
-    plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackedbar)
-    plot_prop(Property.DecisionCount, dataset, plot_histplot)
-    plot_prop(Property.TurnCount, dataset, plot_freq_stackbar_gen(2))
+    #plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot)
+    #plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackedbar)
+    #plot_prop(Property.DecisionCount, dataset, plot_histplot)
+    #plot_prop(Property.TurnCount, dataset, plot_freq_stackbar_gen(2))
+    plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_density_2d)
 
 if __name__ == '__main__':
     main()

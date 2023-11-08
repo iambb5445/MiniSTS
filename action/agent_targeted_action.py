@@ -1,6 +1,6 @@
 from __future__ import annotations
 from value import Value, ConstValue
-from status_effecs import StatusEffect, strength_apply, vigor_apply, vulnerable_apply, weak_apply
+from status_effecs import StatusEffect, strength_apply, vigor_apply, vulnerable_apply, weak_apply, vigor_after
 from utility import Event
 from typing import TYPE_CHECKING
 from action.action import Action
@@ -103,5 +103,6 @@ class ApplyStatus(AgentTargeted):
 # TODO order
 DealAttackDamage.event.subscribe_values(strength_apply)
 DealAttackDamage.event.subscribe_values(vigor_apply)
+DealAttackDamage.event.subscribe_after(vigor_after)
 DealAttackDamage.event.subscribe_values(vulnerable_apply)
 DealAttackDamage.event.subscribe_values(weak_apply)

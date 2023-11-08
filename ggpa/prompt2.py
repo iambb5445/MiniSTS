@@ -43,8 +43,8 @@ The <STATUS_EFFECTS> in the game are defined as follows:
 Every <STATUS_EFFECT> has a value x. The value of a <STATUS_EFFECT> can stack, meaning that if applied multiple times on the same target, their x values are added together.
 - <VULNERABLE>: Take 50% more damage from attacks for x turns.
 - <WEAK>: Deal 25% less attack damage for x turns.
-- <STRENGTH>: Deal x more attack damage.
-- <VIGOR>: Deal x more attack damage only on the next attack card you play (this turn or after).
+- <STRENGTH>: Deal x more attack damage. It affects multi-attacks multiple times.
+- <VIGOR>: Deal x more attack damage only on the next attack card you play (this turn or after). It affects multi-attacks multiple times.
 If your character is removed from the game, you lose the game.
 If all the enemies are removed from the game, you win the game.
 To "Exhaust" a card means that the cards will move to your <EXHAUST_PILE> and will not be playable for the rest of the game.
