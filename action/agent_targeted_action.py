@@ -72,7 +72,7 @@ class DealAttackDamage(AgentTargeted):
     
     def __repr__(self) -> str:
         if self.times.peek() != 1:
-            return f"Deal {self.val.peek()} damage {repr(self.times.peek())} times"
+            return f"Deal {self.val.peek()} damage {self.times.peek()} times"
         else:
             return f"Deal {self.val.peek()} damage"
 

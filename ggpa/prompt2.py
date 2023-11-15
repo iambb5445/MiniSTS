@@ -36,7 +36,7 @@ Every turn, in this exact order:
 - You draw a set of {game_state.draw_count} cards from your <DRAW_PILE> into your <HAND>. If your <DRAW_PILE> doesn't have enough cards, you draw as much as you can, then you shuffle all the cards from your <DISCARD_PILE> into your <DRAW_PILE>. Then, you draw the remaing number of cards from your <DRAW_PILE> into your <HAND>.
 - You play as many cards as you want as long as you have enough <MANA> to play them. Then you end your turn.
 - When you end your turn, all the remainig cards in your <HAND> move to your <DISCARD_PILE>. You will draw new cards next turn.
-- When you end your turn, Your enemies one by one do their intended action.
+- When you end your turn, Your enemies one by one do their intended action (this is shown for each enemy as "intention"). Note that the intention of an enemy will be affected by its status effects. For example, if an enemy intends to attack for 3, but has 4 <STRENGTH>s, it will deal 7 damage.
 When any creature gets attacked, first it loses <BLOCK>. Whatever damage is left, it loses as <HP>. Any block lasts only for one turn.
 Any creature that reaches an <HP> of zero or less, is removed from the game.
 The <STATUS_EFFECTS> in the game are defined as follows:
@@ -56,7 +56,7 @@ You have {battle_state.mana} <MANA> out of the {game_state.max_mana} <MANA> that
 You have:
 hp:{player.health}/{player.max_health}, block:{player.block}, status effects:{player.status_effects}
 Your enemies are:
-{nl.join([f'{i}: hp:{enemy.health}/{enemy.max_health}, block:{enemy.block}, status effects:{enemy.status_effects}' for i, enemy in enumerate(battle_state.enemies)])}
+{nl.join([f'{i}: hp:{enemy.health}/{enemy.max_health}, block:{enemy.block}, status effects:{enemy.status_effects}, intention:{enemy.get_intention(game_state, battle_state)}' for i, enemy in enumerate(battle_state.enemies)])}
 You have the following cards in your <EXHAUST_PILE>:
 {'-empty-' if len(battle_state.exhaust_pile) == 0 else
   ' '.join([f'{i}: {card.get_name()}' for i, card in enumerate(battle_state.exhaust_pile)])}

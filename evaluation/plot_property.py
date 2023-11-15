@@ -388,10 +388,11 @@ def main():
             continue
         dataset.append((id, bot_name, LogData.from_file(os.path.join(dirname, log_filename))))
     dataset.sort(key=lambda it: it[0])
-    #plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot)
-    #plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackedbar)
-    #plot_prop(Property.DecisionCount, dataset, plot_histplot)
-    #plot_prop(Property.TurnCount, dataset, plot_freq_stackbar_gen(2))
+    plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot)
+    plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackedbar)
+    plot_prop(Property.DecisionCount, dataset, plot_histplot)
+    plot_prop(Property.TurnCount, dataset, plot_freq_stackbar_gen(2))
+    plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_scatter_2d)
     plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_density_2d)
 
 if __name__ == '__main__':
