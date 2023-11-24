@@ -6,6 +6,12 @@ from matplotlib import pyplot as plt
 from enum import StrEnum
 import numpy as np
 from typing import Callable
+import sys
+import os.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+from utility import RandomStr
 
 class CardData:
     def __init__(self, title: str, actions: list[str]):
@@ -243,9 +249,26 @@ class Property(StrEnum):
     FinalPlayerHealth = 'Player Health'
     DecisionCount = 'Number of Decisions'
     BatterStimulateCombo = 'Stimulate-Batter Synergy'
+    ToleranceCombo = 'Tolerance Synergy'
+    BombPlayed = 'Bomb Played'
+    ToleranceTurn = 'Turn Tolerate was used'
+    BombTurn = 'First turn Bomb was used'
     TurnCount = 'Number of Turns'
 
-def get_prop(prop: Property, data: LogData):
+def get_cards(data: LogData):
+    cards_per_turn: list[list[str]] = []
+    for turn in data.turns:
+        cards_per_turn.append([])
+        for action in turn.actions:
+            if not isinstance(action, PlayCardAction):
+                continue
+            assert action.pile_name == 'hand', "Card play from outside hand!"
+            pile = [pile for pile in turn.piles if pile.name == action.pile_name][0]
+            card_name = pile.card_names[action.ind]
+            cards_per_turn[-1].append(card_name)
+    return cards_per_turn
+
+def get_prop(prop: Property, data: LogData) -> int:
     if prop == Property.FinalPlayerHealth:
         return data.turns[-1].player.agent_data.hp
     elif prop == Property.DecisionCount:
@@ -267,6 +290,34 @@ def get_prop(prop: Property, data: LogData):
                 if card_name == 'Batter' and 'Vigor' in turn.player.agent_data.status:
                     ret += st_count
         return ret
+    elif prop == Property.ToleranceCombo:
+        cards_per_turn = get_cards(data)
+        for cards in cards_per_turn:
+            for card_name in cards:
+                if card_name == 'Tolerate' or card_name == RandomStr.get_hashed("Tolerate"):
+                    return 1
+        return 0
+    elif prop == Property.BombPlayed:
+        cards_per_turn = get_cards(data)
+        for cards in cards_per_turn:
+            for card_name in cards:
+                if card_name == "Bomb" or card_name == RandomStr.get_hashed("Bomb"):
+                    return 1
+        return 0
+    elif prop == Property.ToleranceTurn:
+        cards_per_turn = get_cards(data)
+        for i, cards in enumerate(cards_per_turn):
+            for card_name in cards:
+                if card_name == 'Tolerate' or card_name == RandomStr.get_hashed("Tolerate"):
+                    return i
+        return -1
+    elif prop == Property.BombTurn:
+        cards_per_turn = get_cards(data)
+        for i, cards in enumerate(cards_per_turn):
+            for card_name in cards:
+                if card_name == "Bomb" or card_name == RandomStr.get_hashed("Bomb"):
+                    return i
+        return -1
     else:
         raise Exception("Property retrieval unrecognized")
     
@@ -292,38 +343,39 @@ def plot_hist(prop: Property, prop_dict: dict[str, list[int]]):
     plt.grid(True)
     plt.show()
 
-def plot_histplot(prop: Property, prop_dict: dict[str, list[int]]):
+def plot_histplot_gen(col_name: str):
+    return lambda prop, prop_dict: plot_histplot(prop, prop_dict, col_name)
+
+def plot_histplot(prop: Property, prop_dict: dict[str, list[int]], col_name: str):
     df = pd.DataFrame(prop_dict)
-    df = df.melt(var_name='BotName', value_name=str(prop))
+    df = df.melt(var_name=col_name, value_name=str(prop))
     # for test purposes and comparing with 'results.csv'
     # df.to_csv(os.path.join(dirname, 'results2.csv'))
-    sns.histplot(data=df, x=str(prop), hue="BotName", bins=15, element="step", common_norm=False, kde=True) # type: ignore
+    sns.histplot(data=df, x=str(prop), hue=col_name, bins=15, element="step", common_norm=False, kde=True) # type: ignore
     plt.show()
 
-def plot_freq_stackedbar(prop: Property, prop_dict: dict[str, list[int]]):
-    _plot_freq_stackedbar_prec(prop, prop_dict, 1)
+def plot_freq_stackbar_gen(col_name: str, prec: int = 1):
+    return lambda prop, prop_dict: _plot_freq_stackedbar_prec(prop, prop_dict, prec, col_name)
 
-def plot_freq_stackbar_gen(prec: int):
-    return lambda prop, prop_dict: _plot_freq_stackedbar_prec(prop, prop_dict, prec)
-
-def _plot_freq_stackedbar_prec(prop: Property, prop_dict: dict[str, list[int]], _prec: int):
+def _plot_freq_stackedbar_prec(prop: Property, prop_dict: dict[str, list[int]], _prec: int, col_name: str):
+    import math
     plt.figure(figsize=(8, 6))
     bot_names = list(prop_dict.keys())
+    print(prop_dict)
     cnt = dict((bot_name, {}) for bot_name in bot_names)
-    prop_dict = dict([(bot_name, [int(val/_prec)*_prec for val in prop_dict[bot_name]]) for bot_name in bot_names])
+    prop_dict = dict([(bot_name, [math.floor(val/_prec)*_prec for val in prop_dict[bot_name]]) for bot_name in bot_names])
     unq_per_bot = [list(set(values)) for values in prop_dict.values()]
-    unqs = list(set([unq for bot_unq in unq_per_bot for unq in bot_unq]))
+    unqs = sorted(list(set([unq for bot_unq in unq_per_bot for unq in bot_unq])))
     for bot_name, values in prop_dict.items():
         for val in values:
             cnt[bot_name][val] = cnt[bot_name].get(val, 0) + 1
-    print(cnt)
     bottom = np.zeros(len(bot_names))
     for value in unqs:
         x = [f'{bot_name}\ntotal:{sum(prop_dict[bot_name])}' for bot_name in bot_names]
         y = [cnt[bot_name].get(value, 0) for bot_name in bot_names]
         plt.bar(x, y, bottom=bottom, label=str(value) if _prec == 1 else f'{value}-{value+_prec-1}')
         bottom += y
-    plt.xlabel('BotName')
+    plt.xlabel(col_name)
     plt.ylabel(f'{str(prop)} Frequency')
     plt.title(f'Frequency of {str(prop)} for differnt agents')
     plt.legend()
@@ -360,10 +412,12 @@ def plot_density_2d(prop1: Property, prop2: Property, prop_dict1: dict[str, list
 
 def get_prop_dict(prop: Property, dataset: list[tuple[int, str, LogData]]):
     prop_dict: dict[str, list[int]] = {}
-    for id, bot_name, data in dataset:
-        if bot_name not in prop_dict:
-            prop_dict[bot_name] = []
-        prop_dict[bot_name].append(get_prop(prop, data))
+    for id, case_name, data in dataset:
+        if case_name not in prop_dict:
+            prop_dict[case_name] = []
+        prop_dict[case_name].append(get_prop(prop, data))
+    for key, val in prop_dict.items():
+        print(f"{key} mean: {sum(val)/len(val)}")
     return prop_dict
 
 def plot_prop(prop: Property, dataset: list[tuple[int, str, LogData]], plot_func: Callable[[Property, dict[str, list[int]]], None]):
@@ -383,17 +437,19 @@ def main():
     log_filename = [filename for filename in os.listdir(dirname) if filename[-4:] == '.log']
     dataset: list[tuple[int, str, LogData]] = []
     for log_filename in log_filename:
-        id, bot_name = log_filename[:-4].split('_')
-        if int(id) in range(40, 45):
-            continue
-        dataset.append((id, bot_name, LogData.from_file(os.path.join(dirname, log_filename))))
+        id, case_name = log_filename[:-4].split('_')
+        dataset.append((id, case_name, LogData.from_file(os.path.join(dirname, log_filename))))
     dataset.sort(key=lambda it: it[0])
-    plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot)
-    plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackedbar)
-    plot_prop(Property.DecisionCount, dataset, plot_histplot)
-    plot_prop(Property.TurnCount, dataset, plot_freq_stackbar_gen(2))
-    plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_scatter_2d)
-    plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_density_2d)
+    plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot_gen('Card'))
+    # plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackedbar)
+    # plot_prop(Property.ToleranceCombo, dataset, plot_freq_stackedbar)
+    plot_prop(Property.BombPlayed, dataset, plot_freq_stackbar_gen('BotName', 1))
+    # plot_prop(Property.ToleranceTurn, dataset, plot_freq_stackbar_gen(10))
+    plot_prop(Property.BombTurn, dataset, plot_freq_stackbar_gen('BotName', 2))
+    plot_prop(Property.DecisionCount, dataset, plot_histplot_gen('Card'))
+    # plot_prop(Property.TurnCount, dataset, plot_freq_stackbar_gen(2))
+    # plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_scatter_2d)
+    # plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_density_2d)
 
 if __name__ == '__main__':
     main()

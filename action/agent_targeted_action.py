@@ -1,6 +1,6 @@
 from __future__ import annotations
 from value import Value, ConstValue
-from status_effecs import StatusEffect, strength_apply, vigor_apply, vulnerable_apply, weak_apply, vigor_after
+from status_effecs import StatusEffectDefinition, strength_apply, vigor_apply, vulnerable_apply, weak_apply, vigor_after
 from utility import Event
 from typing import TYPE_CHECKING
 from action.action import Action
@@ -72,6 +72,25 @@ class DealAttackDamage(AgentTargeted):
     
     def __repr__(self) -> str:
         if self.times.peek() != 1:
+            return f"Deal {self.val.peek()} attack damage {self.times.peek()} times"
+        else:
+            return f"Deal {self.val.peek()} attack damage"
+        
+
+class DealDamage(AgentTargeted):
+    def __init__(self, val: Value, times: Value = ConstValue(1)):
+        super().__init__(val)
+        self.val = val
+        self.times = times
+    
+    def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
+        amount = self.val.get()
+        times = self.times.get()
+        for _ in range(times):
+            target.get_damaged(round(amount))
+    
+    def __repr__(self) -> str:
+        if self.times.peek() != 1:
             return f"Deal {self.val.peek()} damage {self.times.peek()} times"
         else:
             return f"Deal {self.val.peek()} damage"
@@ -88,13 +107,13 @@ class AddBlock(AgentTargeted):
         return f"Add {self.val.peek()} block"
 
 class ApplyStatus(AgentTargeted):
-    def __init__(self, val: Value, status_effect: StatusEffect):
+    def __init__(self, val: Value, status_effect: StatusEffectDefinition):
         super().__init__(val)
         self.val = val
         self.status_effect = status_effect
     
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
-        target.apply_status(self.status_effect, self.val.get())
+        target.status_effect_state.apply_status(self.status_effect, self.val.get())
 
     def __repr__(self) -> str:
         return f"Apply {self.val.peek()} {str(self.status_effect)}"

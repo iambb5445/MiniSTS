@@ -8,11 +8,14 @@ if TYPE_CHECKING:
     from card import Card
     from action.action import Action
 from config import MAX_MANA, Verbose
-from utility import get_unique_filename
+from card import CardType
+from utility import get_unique_filename, Event
+from status_effecs import tolerance_after, bomb_after
 
 import random
 
 class BattleState:
+    side_turn_event: Event[None, tuple[Agent, GameState, BattleState, list[Agent]]] = Event()
     def __init__(self, game_state: GameState, *enemies: Enemy, verbose: Verbose, log_filename: str|None = None):
         self.player = game_state.player
         self.enemies = [enemy for enemy in enemies]
@@ -91,7 +94,7 @@ class BattleState:
         assert card_index < len(self.hand) and card_index >= 0, "Card index {} out of range for hand {}".format(card_index, self.hand)
         card = self.hand.pop(card_index)
         card.play(self.game_state, self)
-        if not self.is_present(card):
+        if not self.is_present(card) and not card.card_type == CardType.POWER:
             self.discard_pile.append(card)
 
     def is_present(self, card: Card):
@@ -186,9 +189,13 @@ class BattleState:
     
     def _play_side(self, side: list[Agent], other_side: list[Agent]):
         for agent in side:
+            BattleState.side_turn_event.broadcast_before((agent, self.game_state, self, other_side))
+        for agent in side:
             self._take_agent_turn(agent)
         for agent in side:
-            agent.decrease_status()
+            BattleState.side_turn_event.broadcast_after((agent, self.game_state, self, other_side))
+        for agent in side:
+            agent.status_effect_state.end_turn()
         for agent in other_side:
             agent.clear_block()
 
@@ -204,12 +211,16 @@ class BattleState:
     def tick_player(self, action: Action) -> bool:
         if self.ended():
             return False
+        other_side: list[Agent] = [enemy for enemy in self.enemies]
+        BattleState.side_turn_event.broadcast_before((self.player, self.game_state, self, other_side))
         action.play(self.player, self.game_state, self)
         self.enemies: list[Enemy] = [enemy for enemy in self.enemies if not enemy.is_dead()]
         if not self.agent_turn_ended:
             return True
         self.turn_phase += 1
-        self.player.decrease_status()
+        other_side: list[Agent] = [enemy for enemy in self.enemies]
+        BattleState.side_turn_event.broadcast_after((self.player, self.game_state, self, other_side))
+        self.player.status_effect_state.end_turn()
         for enemy in self.enemies:
             enemy.clear_block()
         self._play_side([enemy for enemy in self.enemies], [self.player])
@@ -246,3 +257,6 @@ class BattleState:
         self.player.clean_up()
         self.visualize()
         self.log("WIN\n" if self.get_end_result() == 1 else "LOSE\n")
+
+BattleState.side_turn_event.subscribe_after(tolerance_after)
+BattleState.side_turn_event.subscribe_after(bomb_after)

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import random
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from agent import Agent
@@ -13,7 +14,7 @@ def get_agent_set_name(agent_set: AgentSet):
     if agent_set == AgentSet.ENEMY:
         return "enemies"
     elif agent_set == AgentSet.ALL:
-        return "all agents"
+        return "living"
     else:
         raise Exception("AgentSet {} not recognized.".format(agent_set))
 
@@ -74,9 +75,14 @@ class AllAgentsTarget(AgentTarget):
     def __repr__(self) -> str:
         return f"all {get_agent_set_name(self.among)}"
 
-'''
 class RandomAgentTarget(AgentTarget):
-    def __init__(self, among: AgentSet, count: int = 1):
+    def __init__(self, among: AgentSet):
         self.among = among
-        self.count = count
-'''
+    
+    def get(self, performer: Agent, battle_state: BattleState) -> list[Agent]:
+        agent_list: list[Agent] = get_agent_set_data(self.among, battle_state)
+        agent = random.choice(agent_list)
+        return [agent]
+    
+    def __repr__(self) -> str:
+        return f"random target between {get_agent_set_name(self.among)}"

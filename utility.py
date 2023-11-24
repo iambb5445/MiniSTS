@@ -179,3 +179,29 @@ def get_unique_filename(filename: str, ext: str):
     while os.path.isfile(unique_filename):
         unique_filename = f'{filename}_{index}.{ext}'
     return unique_filename
+
+class RandomStr:
+    @staticmethod
+    def _get_char_set():
+        import string
+        return string.ascii_uppercase + string.digits
+
+    @staticmethod
+    def get_random(k: int = 6):
+        return ''.join(random.choices(RandomStr._get_char_set(), k=k))
+
+    @staticmethod
+    def get_int_hashed(s: str, salt: int=42) -> int:
+        ret = salt
+        for c in s:
+            ret *= 65536
+            ret += ord(c)
+            ret %= 100003#1000000007
+        return ret
+
+    @staticmethod
+    def get_hashed(s: str, k: int = 6):
+        splits = [s[int(len(s)*i/k):int(len(s)*(i+1)/k)] for i in range(k)]
+        nums = [RandomStr.get_int_hashed(split) for split in splits]
+        chrset = RandomStr._get_char_set()
+        return ''.join([chrset[n%len(chrset)] for n in nums])

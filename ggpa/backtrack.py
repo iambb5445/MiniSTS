@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class BacktrackBot(GGPA):
     def __init__(self, depth: int, should_save_states: bool):
-        super().__init__(f"Backtrack-Depth{depth}")
+        super().__init__(f"Backtrack-Depth{depth}{'-save' if should_save_states else ''}")
         self.depth = depth
         self.should_save_states = should_save_states
         self.memory: dict[str, float|None] = {}
@@ -42,7 +42,7 @@ class BacktrackBot(GGPA):
             return -1000
         def _get_value(battle_state: BattleState) -> float:
             return battle_state.player.health - sum([enemy.health for enemy in battle_state.enemies]) + (0.5 if win == 1 else 0)
-        rollout = self._rollout_state(game_state, battle_state, 10)
+        rollout = self._rollout_state(game_state, battle_state, 0)
         values = [_get_value(rolledout_battle_state) for rolledout_battle_state in rollout]
         return sum(values)/len(values)
     

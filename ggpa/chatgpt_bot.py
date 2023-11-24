@@ -9,7 +9,7 @@ from auth import GPT_AUTH
 from utility import get_unique_filename
 from ggpa.prompt2 import PromptOption, get_action_prompt,\
     get_agent_target_prompt, get_card_target_prompt,\
-    strip_response
+    strip_response, _get_game_context
 from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from game import GameState
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 class ChatGPTBot(GGPA):
     class ModelName(StrEnum):
         GPT_4 = "gpt-4"
+        GPT_Turbo_4 = "gpt-4-1106-preview"
         GPT_Turbo_35 = "gpt-3.5-turbo"
         Instruct_Davinci = "text-davinci-003"
         Instruct_GPT_Turbo_35 = "gpt-3.5-turbo-instruct"
@@ -29,12 +30,13 @@ class ChatGPTBot(GGPA):
     token_count: dict[ModelName, int] = {}
     token_limit_per_minute = { #https://platform.openai.com/account/limits
         ModelName.GPT_4: 10000,
+        ModelName.GPT_Turbo_4: 150000,
         ModelName.GPT_Turbo_35: 90000,
         ModelName.Instruct_Davinci: 250000,
         ModelName.Instruct_GPT_Turbo_35: 250000,
     }
 
-    CHAT_MODELS = [ModelName.GPT_4, ModelName.GPT_Turbo_35]
+    CHAT_MODELS = [ModelName.GPT_4, ModelName.GPT_Turbo_4, ModelName.GPT_Turbo_35]
     COMPLETION_MODELS = [ModelName.Instruct_GPT_Turbo_35, ModelName.Instruct_Davinci]
 
     # argmax
@@ -59,14 +61,14 @@ class ChatGPTBot(GGPA):
         request = self.get_request()
         current = time.time()
         prev = ChatGPTBot.call_timestamp.get(self.model_name, current - 1000) # default: long time ago
-        est_tokens = 1200 # len(request)/4, but should sum up all len of all messages
+        est_tokens = sum([len(key) + len(val) for d in request['messages'] for key, val in d.items()])/4
         if self.model_name not in ChatGPTBot.call_timestamp or\
-            ChatGPTBot.token_count[self.model_name] + est_tokens > ChatGPTBot.token_limit_per_minute[self.model_name]:
-            print(f'sleeping for {60 - min(current - prev, 60)}')
+            ChatGPTBot.token_count[self.model_name] + est_tokens > (ChatGPTBot.token_limit_per_minute[self.model_name] * self.share_of_limit):
+            print(f'{self.name} sleeping for {60 - min(current - prev, 60)}')
             time.sleep(60 - min(current - prev, 60))
             ChatGPTBot.call_timestamp[self.model_name] = current
             ChatGPTBot.token_count[self.model_name] = 0
-        print(f'tokens: {ChatGPTBot.token_count[self.model_name]}, est: {est_tokens}')
+        print(f'name: {self.name}, tokens: {ChatGPTBot.token_count[self.model_name]}, est: {est_tokens}')
         # print(self.get_request())
         # exit()
         if self.model_name in ChatGPTBot.CHAT_MODELS:
@@ -89,9 +91,10 @@ class ChatGPTBot(GGPA):
 
     API_KEY = GPT_AUTH # redacted
 
-    def __init__(self, model_name: ChatGPTBot.ModelName, prompt_option: PromptOption):
+    def __init__(self, model_name: ChatGPTBot.ModelName, prompt_option: PromptOption, few_shot: int, share_of_limit: float=1):
         model_name_dict = {
             ChatGPTBot.ModelName.GPT_4: '4',
+            ChatGPTBot.ModelName.GPT_Turbo_4: 't4',
             ChatGPTBot.ModelName.GPT_Turbo_35: 't35',
             ChatGPTBot.ModelName.Instruct_GPT_Turbo_35: 'it35',
             ChatGPTBot.ModelName.Instruct_Davinci: 'idav',
@@ -102,14 +105,18 @@ class ChatGPTBot(GGPA):
             PromptOption.CoT_rev: 'cotr',
             PromptOption.DAG: 'dag',
         }
-        super().__init__(f"ChatGPT-{model_name_dict[model_name]}-{prompt_dict[prompt_option]}")
         self.model_name = model_name
         self.prompt_option = prompt_option
+        self.share_of_limit = share_of_limit
+        self.few_shot = few_shot
+        self.messages: list[dict[str, str]] = []
+        super().__init__(f"ChatGPT-{model_name_dict[model_name]}-{prompt_dict[prompt_option]}-f{self.few_shot}")
         self.clear_history()
 
     def get_integer_response(self, min: int, max: int, prompt_option: PromptOption) -> int:
         if max == min:
             self.history.append({'auto-answer': str(min)})
+            self.messages = self.messages[:-1]
             return min
         while True:
             try:
@@ -130,12 +137,20 @@ class ChatGPTBot(GGPA):
 
     def choose_card(self, game_state: GameState, battle_state: BattleState) -> EndAgentTurn|PlayCard:
         options = self.get_choose_card_options(game_state, battle_state)
-        prompt = get_action_prompt(game_state, battle_state, options, self.prompt_option)
+        get_context = False
+        if self.few_shot==0:
+            self.messages: list[dict[str, str]] = [{"role": "system", "content": "You are a bot specialized in playing a card game."}]
+            get_context = True
+        elif len(self.messages) == 0:
+            self.messages: list[dict[str, str]] = [
+                {"role": "system", "content": "You are a bot specialized in playing a card game."},
+                {"role": "user", "content": _get_game_context(game_state, battle_state, options)}
+            ]
+        if len(self.messages)-2+2 > self.few_shot*2:
+            self.messages = self.messages[:2] + self.messages[-(self.few_shot-1)*2:]
+        prompt = get_action_prompt(game_state, battle_state, options, self.prompt_option, get_context)
+        self.messages.append({"role": "user", "content": prompt})
         openai.api_key = self.API_KEY
-        self.messages: list[dict[str, str]] = [
-            {"role": "system", "content": "You are a bot specialized in playing a card game."},
-            {"role": "user", "content": prompt},
-        ]
         value = self.get_integer_response(0, len(options)-1, self.prompt_option)
         return options[value]
     

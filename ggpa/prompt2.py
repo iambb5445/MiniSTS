@@ -15,13 +15,15 @@ class PromptOption(Enum):
     CoT = 2
     DAG = 3
 
-def get_action_prompt(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn], prompt_option: PromptOption):
+def get_action_prompt(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn], prompt_option: PromptOption, get_context: bool):
     state = _get_game_state(game_state, battle_state, options)
     request = _get_action_request(options, prompt_option)
+    if get_context:
+        context = _get_game_context(game_state, battle_state, options)
+        return f'{context}\n{state}\n{request}'
     return f'{state}\n{request}'
 
-def _get_game_state(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn]):
-    player = battle_state.player
+def _get_game_context(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn]):
     nl = '\n'
     deck: dict[str, tuple[Card, int]] = {}
     for card in battle_state.exhaust_pile + battle_state.discard_pile + battle_state.draw_pile + battle_state.hand:
@@ -45,18 +47,32 @@ Every <STATUS_EFFECT> has a value x. The value of a <STATUS_EFFECT> can stack, m
 - <WEAK>: Deal 25% less attack damage for x turns.
 - <STRENGTH>: Deal x more attack damage. It affects multi-attacks multiple times.
 - <VIGOR>: Deal x more attack damage only on the next attack card you play (this turn or after). It affects multi-attacks multiple times.
+- <BOMB>: Deal 40 damage to all enemies after x turns.
+- <TOLERANCE>: Gain X block at the end of your turn. Increase X by 1.
 If your character is removed from the game, you lose the game.
 If all the enemies are removed from the game, you win the game.
+Your goal is to win the game with as much remaining health as possible.
 To "Exhaust" a card means that the cards will move to your <EXHAUST_PILE> and will not be playable for the rest of the game.
-Right now, the game is in turn {battle_state.turn}, and it's time for you to play.
-You have the following cards in your deck:
+You started with the following cards in your deck:
 {nl.join([f'{count} of card <name: {card.name}, mana cost:{card.mana_cost.peek()}, type:{card.card_type}{nl}' +
-          f'description: {" ".join([f"{action}" for action in card.actions])}' for card, count in deck.values()])}
+          f'description: {card.get_description()}>' for card, count in deck.values()])}'''
+
+def _get_game_state(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn]):
+    player = battle_state.player
+    nl = '\n'
+    deck: dict[str, tuple[Card, int]] = {}
+    for card in battle_state.exhaust_pile + battle_state.discard_pile + battle_state.draw_pile + battle_state.hand:
+        name: str = card.get_name()
+        if name not in deck:
+            deck[name] = (card, 0)
+        deck[name] = (deck[name][0], deck[name][1] + 1)
+    return \
+f'''Right now, the game is in turn {battle_state.turn}, and it's time for you to play.
 You have {battle_state.mana} <MANA> out of the {game_state.max_mana} <MANA> that you get every turn.
 You have:
-hp:{player.health}/{player.max_health}, block:{player.block}, status effects:{player.status_effects}
+hp:{player.health}/{player.max_health}, block:{player.block}, status effects:{repr(player.status_effect_state)}
 Your enemies are:
-{nl.join([f'{i}: hp:{enemy.health}/{enemy.max_health}, block:{enemy.block}, status effects:{enemy.status_effects}, intention:{enemy.get_intention(game_state, battle_state)}' for i, enemy in enumerate(battle_state.enemies)])}
+{nl.join([f'{i}: hp:{enemy.health}/{enemy.max_health}, block:{enemy.block}, status effects:{repr(enemy.status_effect_state)}, intention:{enemy.get_intention(game_state, battle_state)}' for i, enemy in enumerate(battle_state.enemies)])}
 You have the following cards in your <EXHAUST_PILE>:
 {'-empty-' if len(battle_state.exhaust_pile) == 0 else
   ' '.join([f'{i}: {card.get_name()}' for i, card in enumerate(battle_state.exhaust_pile)])}
@@ -93,8 +109,10 @@ It should be in range 0-{len(options)-1}. Only print this number in a single lin
     elif prompt_option == PromptOption.DAG:
         return \
 f'''Answer this:
-In the first paragraph, think of the possible synergies based on your deck. A synergy between a set of cards is when the cards are better when they are used together. Also consdier which one of these synergies are useful or critical in this scenario based on their effect and their cost. For example, a synergy of cost 2 which results in 20 damage is much better than a synergy of cost 2 but only 10 damage. List up to 3 strategies for the rest of the game based on your deck and these synergies.
-In the second paragraph, write which one of these strategies you want to use based on the avaialble cards, resources, and overal state of the game.
+Let's think about the possible strategies based on your deck. Considering the cost and effect of your card, let's find which cards are better to use in general, or if there are any synergies between your cards.
+A synergy between a set of cards is when the cards are better when they are used together. Of course, we don't want to use two cards just because they affect each other, but we want to see if there are any specifically powerful card/cards that we can use.
+In the first paragraph, list up to 3 strategies for the rest of the game based on your deck.
+In the second paragraph, rank these synergies. Write which one of these strategies you want to use now based on the avaialble cards, resources, and overal state of the game.
 In the third paragraph, tell us what would be your move between the provided <OPTIONS> based on your target strategy.
 Finally, in the last line, write only the index of the option you want to take. It should be one of the provided <OPIONS>.
 It should be in range 0-{len(options)-1}. Only print this number in a single line for the final line, and nothing else.'''
@@ -133,5 +151,5 @@ def get_card_target_prompt(battle_state: BattleState, list_name: str, options: l
 f'''On which one of the cards among {list_name} you want to apply this?
 The valid options are: (provided in <index>:<option> format)
 {nl.join([f'{i}: name:{card.get_name()}, cost:{card.mana_cost.peek()}, type:{card.card_type}{nl}' +
-          f'description: {" ".join([f"{action}" for action in card.actions])}' for i, card in enumerate(options)])}
+          f'description: {card.get_description}' for i, card in enumerate(options)])}
 Respond with a single number in a single line, indicating the <index> of the target. Do not add anything other than this one number.'''

@@ -21,7 +21,7 @@ class HumanInput(GGPA):
             card_list = battle_state.get_hand()
             ask = "Enter card number in {}, or -1 for ending your turn:\n".format(" ".join(["{}:{}".format(i, card_list[i].name) for i in range(len(card_list))]))
             if self.should_describe_options:
-                ask += "".join([f"{i}: {card}\n" for i, card in enumerate(card_list)])
+                ask += "".join([f"{i}: {repr(card)}\n" for i, card in enumerate(card_list)])
             card_index = UserInput.ask_for_number(ask, lambda val: val >= -1 and val < len(card_list))
             if card_index < 0:
                 return EndAgentTurn()
