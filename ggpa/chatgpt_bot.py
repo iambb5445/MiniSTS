@@ -29,9 +29,9 @@ class ChatGPTBot(GGPA):
     call_timestamp: dict[ModelName, float] = {}
     token_count: dict[ModelName, int] = {}
     token_limit_per_minute = { #https://platform.openai.com/account/limits
-        ModelName.GPT_4: 10000,
-        ModelName.GPT_Turbo_4: 150000,
-        ModelName.GPT_Turbo_35: 90000,
+        ModelName.GPT_4: 80000, #10000,
+        ModelName.GPT_Turbo_4: 600000, #150000,
+        ModelName.GPT_Turbo_35: 160000, #90000,
         ModelName.Instruct_Davinci: 250000,
         ModelName.Instruct_GPT_Turbo_35: 250000,
     }
@@ -61,28 +61,44 @@ class ChatGPTBot(GGPA):
         request = self.get_request()
         current = time.time()
         prev = ChatGPTBot.call_timestamp.get(self.model_name, current - 1000) # default: long time ago
-        est_tokens = sum([len(key) + len(val) for d in request['messages'] for key, val in d.items()])/4
+        if self.model_name in ChatGPTBot.CHAT_MODELS:
+            est_tokens: int = sum([len(key) + len(val) for d in request['messages'] for key, val in d.items()])//4
+        elif self.model_name in ChatGPTBot.COMPLETION_MODELS:
+            est_tokens: int = len(request['prompt'])//4
+        else:
+            raise Exception(f"Model type not recognized for {self.model_name}")
         if self.model_name not in ChatGPTBot.call_timestamp or\
             ChatGPTBot.token_count[self.model_name] + est_tokens > (ChatGPTBot.token_limit_per_minute[self.model_name] * self.share_of_limit):
-            print(f'{self.name} sleeping for {60 - min(current - prev, 60)}')
-            time.sleep(60 - min(current - prev, 60))
+            sleep_time = 60 - min(current - prev, 60)
+            sleep_time += 3 # eps
+            print(f'{self.name} sleeping for {sleep_time}')
+            time.sleep(sleep_time)
             ChatGPTBot.call_timestamp[self.model_name] = current
             ChatGPTBot.token_count[self.model_name] = 0
         print(f'name: {self.name}, tokens: {ChatGPTBot.token_count[self.model_name]}, est: {est_tokens}')
-        # print(self.get_request())
-        # exit()
-        if self.model_name in ChatGPTBot.CHAT_MODELS:
-            response = openai.ChatCompletion.create(**request)
-            self.history.append({'request': request, 'response': response})
-            ChatGPTBot.token_count[self.model_name] += int(response['usage']['total_tokens'])
-            return response['choices'][0]['message']['content']
-        elif self.model_name in ChatGPTBot.COMPLETION_MODELS:
-            response = openai.Completion.create(**request)
-            self.history.append({'request': request, 'response': response})
-            ChatGPTBot.token_count[self.model_name] += int(response['usage']['total_tokens'])
-            return response['choices'][0]['text']
-        else:
-            raise Exception(f"Model API type not recognized for {self.model_name}")
+        try:
+            if self.model_name in ChatGPTBot.CHAT_MODELS:
+                before_request = time.time()
+                response = openai.ChatCompletion.create(**request)
+                self.metadata["response_time"].append(time.time() - before_request)
+                print(f"Added to metadata: {self.metadata['response_time'][-1]}")
+                self.history.append({'request': request, 'response': response})
+                ChatGPTBot.token_count[self.model_name] += int(response['usage']['total_tokens'])
+                return response['choices'][0]['message']['content']
+            elif self.model_name in ChatGPTBot.COMPLETION_MODELS:
+                before_request = time.time()
+                response = openai.Completion.create(**request)
+                self.metadata["response_time"].append(time.time() - before_request)
+                print(f"Added to metadata: {self.metadata['response_time'][-1]}")
+                self.history.append({'request': request, 'response': response})
+                ChatGPTBot.token_count[self.model_name] += int(response['usage']['total_tokens'])
+                return response['choices'][0]['text']
+            else:
+                raise Exception(f"Model API type not recognized for {self.model_name}")
+        except openai.error.RateLimitError as e:
+            ChatGPTBot.token_count[self.model_name] = int(ChatGPTBot.token_limit_per_minute[self.model_name] * self.share_of_limit + 100)
+            raise e
+            
 
     # loosely adapted from https://github.com/adamkarvonen/chess_gpt_eval/blob/master/gpt_query.py
     def translate_to_string_input(self, openai_messages: list[dict[str, str]]):
@@ -91,7 +107,7 @@ class ChatGPTBot(GGPA):
 
     API_KEY = GPT_AUTH # redacted
 
-    def __init__(self, model_name: ChatGPTBot.ModelName, prompt_option: PromptOption, few_shot: int, share_of_limit: float=1):
+    def __init__(self, model_name: ChatGPTBot.ModelName, prompt_option: PromptOption, few_shot: int, show_option_results: bool, share_of_limit: float=1):
         model_name_dict = {
             ChatGPTBot.ModelName.GPT_4: '4',
             ChatGPTBot.ModelName.GPT_Turbo_4: 't4',
@@ -109,8 +125,10 @@ class ChatGPTBot(GGPA):
         self.prompt_option = prompt_option
         self.share_of_limit = share_of_limit
         self.few_shot = few_shot
+        self.show_option_results = show_option_results
         self.messages: list[dict[str, str]] = []
-        super().__init__(f"ChatGPT-{model_name_dict[model_name]}-{prompt_dict[prompt_option]}-f{self.few_shot}")
+        super().__init__(f"ChatGPT-{model_name_dict[model_name]}-{prompt_dict[prompt_option]}-f{self.few_shot}{'-results' if show_option_results else ''}")
+        self.clear_metadata()
         self.clear_history()
 
     def get_integer_response(self, min: int, max: int, prompt_option: PromptOption) -> int:
@@ -130,8 +148,10 @@ class ChatGPTBot(GGPA):
                     break
             except Exception as e:
                 print(f"Wrong format for {self.name}, option {prompt_option}:\n*{response}*\nExtracted: *{strip_response(response, prompt_option)}*")
+                self.metadata["wrong_format_count"] += 1
                 continue
             print(f'Wrong range for {self.name}: *{response}*\nValue: {value}')
+            self.metadata["wrong_range_count"] +=1
         self.messages.append({"role": "assistant", "content": response})
         return value
 
@@ -148,7 +168,7 @@ class ChatGPTBot(GGPA):
             ]
         if len(self.messages)-2+2 > self.few_shot*2:
             self.messages = self.messages[:2] + self.messages[-(self.few_shot-1)*2:]
-        prompt = get_action_prompt(game_state, battle_state, options, self.prompt_option, get_context)
+        prompt = get_action_prompt(game_state, battle_state, options, self.prompt_option, get_context, self.show_option_results)
         self.messages.append({"role": "user", "content": prompt})
         openai.api_key = self.API_KEY
         value = self.get_integer_response(0, len(options)-1, self.prompt_option)
@@ -170,7 +190,18 @@ class ChatGPTBot(GGPA):
         filename = get_unique_filename(filename, 'json')
         with open(filename, "w") as file:
             json.dump(self.history, file, indent=4)
+
+    def dump_metadata(self, filename: str):
+        print(filename)
+        with open(filename, "a") as file:
+            json.dump(self.metadata, file, indent=4)
+            file.write('\n')
     
+    def clear_metadata(self):
+        self.metadata["response_time"] = []
+        self.metadata["wrong_format_count"] = 0
+        self.metadata["wrong_range_count"] = 0
+
     def clear_history(self):
         self.history: list[dict[str, Any]] = [{
             'model': str(self.model_name),
