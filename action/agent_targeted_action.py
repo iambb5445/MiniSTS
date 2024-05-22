@@ -94,6 +94,18 @@ class DealDamage(AgentTargeted):
             return f"Deal {self.val.peek()} damage {self.times.peek()} times"
         else:
             return f"Deal {self.val.peek()} damage"
+        
+
+class Heal(AgentTargeted):
+    def __init__(self, val: Value):
+        super().__init__(val)
+        self.val = val
+    
+    def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Agent) -> None:
+        target.get_healed(self.val.get())
+    
+    def __repr__(self) -> str:
+        return f"Apply {self.val.peek()} heal"
 
 class AddBlock(AgentTargeted):
     def __init__(self, val: Value):
