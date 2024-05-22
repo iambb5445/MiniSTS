@@ -250,22 +250,35 @@ class Property(StrEnum):
     DecisionCount = 'Number of Decisions'
     BatterStimulateCombo = 'Stimulate-Batter Synergy'
     ToleranceCombo = 'Tolerance Synergy'
+    BombCount = 'Bomb Count'
+    SufferChooseChance = 'Suffer Choose Chance'
     BombPlayed = 'Bomb Played'
     ToleranceTurn = 'Turn Tolerate was used'
     BombTurn = 'First turn Bomb was used'
     TurnCount = 'Number of Turns'
 
-def get_cards(data: LogData):
-    cards_per_turn: list[list[str]] = []
+def get_played_cards(data: LogData):
+    cards_per_turn: list[list[str]] = [[]]
     for turn in data.turns:
-        cards_per_turn.append([])
         for action in turn.actions:
+            if isinstance(action, EndTurnAction):
+                cards_per_turn.append([])
             if not isinstance(action, PlayCardAction):
                 continue
             assert action.pile_name == 'hand', "Card play from outside hand!"
             pile = [pile for pile in turn.piles if pile.name == action.pile_name][0]
             card_name = pile.card_names[action.ind]
             cards_per_turn[-1].append(card_name)
+    return cards_per_turn[:-1]
+
+def get_available_cards(data: LogData):
+    cards_per_turn: list[list[str]] = []
+    for turn in data.turns:
+        if turn.turn > len(cards_per_turn):
+            cards_per_turn.append([])
+            hand = [pile for pile in turn.piles if pile.name == 'hand'][0]
+            for card_name in hand.card_names:
+                cards_per_turn[-1].append(card_name)
     return cards_per_turn
 
 def get_prop(prop: Property, data: LogData) -> int:
@@ -285,34 +298,56 @@ def get_prop(prop: Property, data: LogData) -> int:
                 assert action.pile_name == 'hand', "Card play from outside hand!"
                 pile = [pile for pile in turn.piles if pile.name == action.pile_name][0]
                 card_name = pile.card_names[action.ind]
-                if card_name == 'Stimulate':
+                if card_name == 'Stimulate' or card_name == RandomStr.get_hashed("Stimulate"):
                     st_count += 1
-                if card_name == 'Batter' and 'Vigor' in turn.player.agent_data.status:
+                if (card_name == 'Batter' or card_name == RandomStr.get_hashed("Batter")) and 'Vigor' in turn.player.agent_data.status:
                     ret += st_count
         return ret
     elif prop == Property.ToleranceCombo:
-        cards_per_turn = get_cards(data)
+        cards_per_turn = get_played_cards(data)
         for cards in cards_per_turn:
             for card_name in cards:
                 if card_name == 'Tolerate' or card_name == RandomStr.get_hashed("Tolerate"):
                     return 1
         return 0
     elif prop == Property.BombPlayed:
-        cards_per_turn = get_cards(data)
+        cards_per_turn = get_played_cards(data)
         for cards in cards_per_turn:
             for card_name in cards:
                 if card_name == "Bomb" or card_name == RandomStr.get_hashed("Bomb"):
                     return 1
         return 0
+    elif prop == Property.BombCount:
+        cards_per_turn = get_played_cards(data)
+        ret = 0
+        for cards in cards_per_turn:
+            for card_name in cards:
+                if card_name == "Bomb" or card_name == RandomStr.get_hashed("Bomb"):
+                    ret += 1
+        return ret
+    elif prop == Property.SufferChooseChance:
+        cards_played_per_turn = get_played_cards(data)
+        cards_available_per_turn = get_available_cards(data)
+        played = 0
+        available = 0
+        for turn in range(len(cards_played_per_turn)):
+            for card_name in cards_played_per_turn[turn]:
+                assert card_name in cards_available_per_turn[turn]
+                if card_name == "Suffer" or card_name == RandomStr.get_hashed("Suffer"):
+                    played += 1
+            for card_name in cards_available_per_turn[turn]:
+                if card_name == "Suffer" or card_name == RandomStr.get_hashed("Suffer"):
+                    available += 1
+        return int(100*played/available) if available > 0 else 0
     elif prop == Property.ToleranceTurn:
-        cards_per_turn = get_cards(data)
+        cards_per_turn = get_played_cards(data)
         for i, cards in enumerate(cards_per_turn):
             for card_name in cards:
                 if card_name == 'Tolerate' or card_name == RandomStr.get_hashed("Tolerate"):
                     return i
         return -1
     elif prop == Property.BombTurn:
-        cards_per_turn = get_cards(data)
+        cards_per_turn = get_played_cards(data)
         for i, cards in enumerate(cards_per_turn):
             for card_name in cards:
                 if card_name == "Bomb" or card_name == RandomStr.get_hashed("Bomb"):
@@ -352,6 +387,7 @@ def plot_histplot(prop: Property, prop_dict: dict[str, list[int]], col_name: str
     # for test purposes and comparing with 'results.csv'
     # df.to_csv(os.path.join(dirname, 'results2.csv'))
     sns.histplot(data=df, x=str(prop), hue=col_name, bins=15, element="step", common_norm=False, kde=True) # type: ignore
+    # plt.xlim(0, 80) # Remove
     plt.show()
 
 def plot_freq_stackbar_gen(col_name: str, prec: int = 1):
@@ -361,7 +397,6 @@ def _plot_freq_stackedbar_prec(prop: Property, prop_dict: dict[str, list[int]], 
     import math
     plt.figure(figsize=(8, 6))
     bot_names = list(prop_dict.keys())
-    print(prop_dict)
     cnt = dict((bot_name, {}) for bot_name in bot_names)
     prop_dict = dict([(bot_name, [math.floor(val/_prec)*_prec for val in prop_dict[bot_name]]) for bot_name in bot_names])
     unq_per_bot = [list(set(values)) for values in prop_dict.values()]
@@ -422,11 +457,14 @@ def get_prop_dict(prop: Property, dataset: list[tuple[int, str, LogData]]):
 
 def plot_prop(prop: Property, dataset: list[tuple[int, str, LogData]], plot_func: Callable[[Property, dict[str, list[int]]], None]):
     prop_dict: dict[str, list[int]] = get_prop_dict(prop, dataset)
+    print(prop_dict)
     plot_func(prop, prop_dict)
 
 def plot_prop_2d(prop1: Property, prop2: Property, dataset: list[tuple[int, str, LogData]], plot_func: Callable[[Property, Property, dict[str, list[int]], dict[str, list[int]]], None]):
     prop_dict1: dict[str, list[int]] = get_prop_dict(prop1, dataset)
     prop_dict2: dict[str, list[int]] = get_prop_dict(prop2, dataset)
+    print(prop_dict1)
+    print(prop_dict2)
     plot_func(prop1, prop2, prop_dict1, prop_dict2)
 
 def main():
@@ -438,15 +476,17 @@ def main():
     dataset: list[tuple[int, str, LogData]] = []
     for log_filename in log_filename:
         id, case_name = log_filename[:-4].split('_')
-        dataset.append((id, case_name, LogData.from_file(os.path.join(dirname, log_filename))))
-    dataset.sort(key=lambda it: it[0])
-    plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot_gen('Card'))
-    # plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackedbar)
-    # plot_prop(Property.ToleranceCombo, dataset, plot_freq_stackedbar)
-    plot_prop(Property.BombPlayed, dataset, plot_freq_stackbar_gen('BotName', 1))
-    # plot_prop(Property.ToleranceTurn, dataset, plot_freq_stackbar_gen(10))
-    plot_prop(Property.BombTurn, dataset, plot_freq_stackbar_gen('BotName', 2))
-    plot_prop(Property.DecisionCount, dataset, plot_histplot_gen('Card'))
+        dataset.append((int(id), case_name, LogData.from_file(os.path.join(dirname, log_filename))))
+    # dataset.sort(key=lambda it: it[0])
+    # plot_prop(Property.FinalPlayerHealth, dataset, plot_histplot_gen('Card'))
+    # plot_prop(Property.SufferChooseChance, dataset, plot_histplot_gen('Card'))
+    # plot_prop(Property.BombCount, dataset, plot_histplot_gen('Card'))
+    # plot_prop(Property.ToleranceCombo, dataset, plot_freq_stackbar_gen('BotName', 1))
+    # plot_prop(Property.ToleranceTurn, dataset, plot_freq_stackbar_gen('BotName', 1))
+    # plot_prop(Property.BombPlayed, dataset, plot_freq_stackbar_gen('BotName', 1))
+    # plot_prop(Property.BombTurn, dataset, plot_freq_stackbar_gen('BotName', 10))
+    # plot_prop(Property.BatterStimulateCombo, dataset, plot_freq_stackbar_gen('BotName', 1))
+    # plot_prop(Property.DecisionCount, dataset, plot_histplot_gen('Card'))
     # plot_prop(Property.TurnCount, dataset, plot_freq_stackbar_gen(2))
     # plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_scatter_2d)
     # plot_prop_2d(Property.FinalPlayerHealth, Property.DecisionCount, dataset, plot_density_2d)
