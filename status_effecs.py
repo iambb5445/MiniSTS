@@ -96,7 +96,7 @@ class StatusEffectRepo:
     WEAK = SEDef("Weak", SEDef.add_stack, SEDef.get_decrease(1), SEDef.zero_done, SEDef.key_value_repr)
     STRENGTH = SEDef("Strength", SEDef.add_stack, SEDef.no_change, SEDef.zero_done, SEDef.key_value_repr)
     VIGOR = SEDef("Vigor", SEDef.add_stack, SEDef.no_change, SEDef.zero_done, SEDef.key_value_repr)
-    TOLERANCE = SEDef("Tolerance", SEDef.no_stack, SEDef.get_increase(1), SEDef.zero_done, SEDef.key_value_repr)
+    TOLERANCE = SEDef("Tolerance", SEDef.no_stack, SEDef.get_increase(2), SEDef.zero_done, SEDef.key_value_repr)
     BOMB = SEDef("Bomb", SEDef.unique_stack, SEDef.get_decrease(1), SEDef.zero_done, SEDef.key_value_repr)
 
 class StatusEffectObject:
