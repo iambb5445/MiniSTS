@@ -2,7 +2,7 @@ from __future__ import annotations
 from target.agent_target import AgentSet, ChooseAgentTarget, SelfAgentTarget, AllAgentsTarget, RandomAgentTarget
 from target.card_target import CardPile, SelfCardTarget, ChooseCardTarget
 from action.action import Action, AddMana
-from action.agent_targeted_action import DealAttackDamage, ApplyStatus, AddBlock
+from action.agent_targeted_action import DealAttackDamage, ApplyStatus, AddBlock, Heal
 from action.card_targeted_action import CardTargetedL1, Exhaust, AddCopy, UpgradeCard
 from config import CardType, Character, Rarity
 from status_effecs import StatusEffectRepo, StatusEffectDefinition
@@ -69,8 +69,9 @@ class CardGen:
     # NEW CARDS
     Stimulate = lambda: Card("Stimulate", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, ApplyStatus(ConstValue(4), StatusEffectRepo.VIGOR).To(SelfAgentTarget()))
     Batter = lambda: Card("Batter", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealAttackDamage(ConstValue(0), ConstValue(10)).To(ChooseAgentTarget(AgentSet.ENEMY)))
-    Tolerate = lambda: Card("Tolerate", CardType.POWER, ConstValue(3), Character.IRON_CLAD, Rarity.COMMON, DealAttackDamage(ConstValue(5)).To(SelfAgentTarget()).And(ApplyStatus(ConstValue(1), StatusEffectRepo.TOLERANCE).To(SelfAgentTarget())), desc="Gain 1 block every turn and increase this gain by 1.")
+    Tolerate = lambda: Card("Tolerate", CardType.POWER, ConstValue(3), Character.IRON_CLAD, Rarity.COMMON, ApplyStatus(ConstValue(1), StatusEffectRepo.TOLERANCE).To(SelfAgentTarget()), desc="Gain 1 block every turn and increase this gain by 2.")
     Bomb = lambda: Card("Bomb", CardType.SKILL, ConstValue(2), Character.IRON_CLAD, Rarity.COMMON, ApplyStatus(ConstValue(3), StatusEffectRepo.BOMB).To(SelfAgentTarget()), desc="At the end of 3 turns, deal 40 damage to all enemies.")
+    Suffer = lambda: Card("Suffer", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(15, 30)).To(ChooseAgentTarget(AgentSet.ENEMY)))
 
 class CardRepo:
     @staticmethod
@@ -140,6 +141,11 @@ class CardRepo:
         return deck
     
     @staticmethod
+    def get_scenario_0() -> tuple[str, list[Card]]:
+        deck: list[Card] = CardRepo.get_starter(Character.IRON_CLAD)
+        return "starter-ironclad", deck
+
+    @staticmethod
     def get_scenario_1() -> tuple[str, list[Card]]:
         deck: list[Card] = CardRepo.get_basics()
         deck += [CardGen.Batter(), CardGen.Stimulate()]
@@ -158,6 +164,12 @@ class CardRepo:
         deck: list[Card] = CardRepo.get_basics()
         deck += [CardGen.Bomb()]
         return "basics-bomb", deck
+
+    @staticmethod
+    def get_scenario_4() -> tuple[str, list[Card]]:
+        deck: list[Card] = CardRepo.get_basics()
+        deck += [CardGen.Suffer()]
+        return "basics-suffer", deck
     
     @staticmethod
     def anonymize_scenario(scenario: tuple[str, list[Card]]) -> tuple[str, list[Card]]:
