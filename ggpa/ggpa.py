@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 class GGPA:
     def __init__(self, name: str):
         self.name = name
+        self.metadata = {}
 
     @staticmethod
     def get_play_card_options(game_state: GameState, battle_state: BattleState) -> list[PlayCard]:
