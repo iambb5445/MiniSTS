@@ -1,5 +1,6 @@
 from __future__ import annotations
 from enum import Enum
+from config import Verbose
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game import GameState
@@ -15,8 +16,8 @@ class PromptOption(Enum):
     CoT = 2
     DAG = 3
 
-def get_action_prompt(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn], prompt_option: PromptOption, get_context: bool):
-    state = _get_game_state(game_state, battle_state, options)
+def get_action_prompt(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn], prompt_option: PromptOption, get_context: bool, show_option_results: bool):
+    state = _get_game_state(game_state, battle_state, options, show_option_results)
     request = _get_action_request(options, prompt_option)
     if get_context:
         context = _get_game_context(game_state, battle_state, options)
@@ -48,7 +49,7 @@ Every <STATUS_EFFECT> has a value x. The value of a <STATUS_EFFECT> can stack, m
 - <STRENGTH>: Deal x more attack damage. It affects multi-attacks multiple times.
 - <VIGOR>: Deal x more attack damage only on the next attack card you play (this turn or after). It affects multi-attacks multiple times.
 - <BOMB>: Deal 40 damage to all enemies after x turns.
-- <TOLERANCE>: Gain X block at the end of your turn. Increase X by 1.
+- <TOLERANCE>: Gain X block at the end of your turn. Increase X by 2.
 If your character is removed from the game, you lose the game.
 If all the enemies are removed from the game, you win the game.
 Your goal is to win the game with as much remaining health as possible.
@@ -57,7 +58,7 @@ You started with the following cards in your deck:
 {nl.join([f'{count} of card <name: {card.name}, mana cost:{card.mana_cost.peek()}, type:{card.card_type}{nl}' +
           f'description: {card.get_description()}>' for card, count in deck.values()])}'''
 
-def _get_game_state(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn]):
+def _get_game_state(game_state: GameState, battle_state: BattleState, options: list[PlayCard|EndAgentTurn], show_option_results: bool):
     player = battle_state.player
     nl = '\n'
     deck: dict[str, tuple[Card, int]] = {}
@@ -72,7 +73,7 @@ You have {battle_state.mana} <MANA> out of the {game_state.max_mana} <MANA> that
 You have:
 hp:{player.health}/{player.max_health}, block:{player.block}, status effects:{repr(player.status_effect_state)}
 Your enemies are:
-{nl.join([f'{i}: hp:{enemy.health}/{enemy.max_health}, block:{enemy.block}, status effects:{repr(enemy.status_effect_state)}, intention:{enemy.get_intention(game_state, battle_state)}' for i, enemy in enumerate(battle_state.enemies)])}
+{nl.join([f'{i}: hp:{enemy.health}/{enemy.max_health}, block:{enemy.block}, status effects:{repr(enemy.status_effect_state)}, intention: {enemy.get_intention(game_state, battle_state)}' for i, enemy in enumerate(battle_state.enemies)])}
 You have the following cards in your <EXHAUST_PILE>:
 {'-empty-' if len(battle_state.exhaust_pile) == 0 else
   ' '.join([f'{i}: {card.get_name()}' for i, card in enumerate(battle_state.exhaust_pile)])}
@@ -86,7 +87,21 @@ You have the following cards in your <HAND>:
 {'-empty-' if len(battle_state.hand) == 0 else
  ' '.join([f'{i}: {card.get_name()}' for i, card in enumerate(battle_state.hand)])}
 This turn, you can do one of the following (your <OPIONS>):
-{nl.join([f'{i}: {option}' for i, option in enumerate(options)])}'''
+{nl.join([f'{i}: {option}{(nl + get_option_result(game_state, battle_state, option)) if show_option_results else ""}' for i, option in enumerate(options)])}'''
+
+def get_option_result(game_state: GameState, battle_state: BattleState, option: PlayCard|EndAgentTurn):
+    battle_state = battle_state.copy_undeterministic()
+    battle_state.verbose = Verbose.NO_LOG
+    battle_state.tick_player(option)
+    game_state = battle_state.game_state
+    nl = '\n*** '
+    player = battle_state.player
+    return \
+f'''*** Choosing this option results in a state in which you have {battle_state.mana} <MANA> remaining, and:
+*** hp:{player.health}/{player.max_health}, block:{player.block}, status effects:{repr(player.status_effect_state)}
+*** And you're enemies will be:
+*** {'*** None (no enemy survives)' if len(battle_state.enemies) == 0 else
+ nl.join([f'{i}: hp:{enemy.health}/{enemy.max_health}, block:{enemy.block}, status effects:{repr(enemy.status_effect_state)}, intention: {enemy.get_intention(game_state, battle_state)}' for i, enemy in enumerate(battle_state.enemies)])}'''
 
 def _get_action_request(options: list[PlayCard|EndAgentTurn], prompt_option: PromptOption):
     if prompt_option == PromptOption.NONE:
@@ -112,7 +127,7 @@ f'''Answer this:
 Let's think about the possible strategies based on your deck. Considering the cost and effect of your card, let's find which cards are better to use in general, or if there are any synergies between your cards.
 A synergy between a set of cards is when the cards are better when they are used together. Of course, we don't want to use two cards just because they affect each other, but we want to see if there are any specifically powerful card/cards that we can use.
 In the first paragraph, list up to 3 strategies for the rest of the game based on your deck.
-In the second paragraph, rank these synergies. Write which one of these strategies you want to use now based on the avaialble cards, resources, and overal state of the game.
+In the second paragraph, rank these strategies. Write which one of these strategies you want to use now based on the avaialble cards, resources, and overal state of the game.
 In the third paragraph, tell us what would be your move between the provided <OPTIONS> based on your target strategy.
 Finally, in the last line, write only the index of the option you want to take. It should be one of the provided <OPIONS>.
 It should be in range 0-{len(options)-1}. Only print this number in a single line for the final line, and nothing else.'''
@@ -121,6 +136,8 @@ It should be in range 0-{len(options)-1}. Only print this number in a single lin
     
 def strip_response(response: str, prompt_option: PromptOption) -> str:
     response = ''.join(c if c not in '.-' else ' ' for c in response) # remove - or . to be more inclusive
+    if len(response) == 0:
+        return ''
     lines = response.split() #new line or any space (instead of new line only) to include more responses
     lines = [line for line in lines if len(line) > 0]
     if prompt_option in [PromptOption.CoT, PromptOption.DAG, PromptOption.NONE]:
