@@ -134,7 +134,7 @@ class HobGoblin(Enemy):
     def __init__(self, game_state: GameState):
         max_health = ConstValue(44)
         slash: Action = DealAttackDamage(ConstValue(22)).To(PlayerAgentTarget())
-        stand: Action = DealAttackDamage(ConstValue(8)).To(PlayerAgentTarget()).And(AddBlock(ConstValue(10)).To(SelfAgentTarget()))
+        stand: Action = DealAttackDamage(ConstValue(10)).To(PlayerAgentTarget()).And(AddBlock(ConstValue(10)).To(SelfAgentTarget()))
         action_set: ItemSet[Action] = RoundRobin(0, slash, stand)
         super().__init__("Goblin", max_health.get(), action_set)
 
