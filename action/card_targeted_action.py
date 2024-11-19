@@ -104,3 +104,11 @@ class UpgradeCard(CardTargetedL2):
 
     def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Card) -> None:
         target.upgrade()
+
+class DiscardCard(CardTargetedL2):
+    def __init__(self):
+        super().__init__()
+
+    def play(self, by: Agent, game_state: GameState, battle_state: BattleState, target: Card) -> None:
+        pass
+        # battle_state.discard(target)

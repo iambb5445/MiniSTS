@@ -3,7 +3,7 @@ from target.agent_target import AgentSet, ChooseAgentTarget, SelfAgentTarget, Al
 from target.card_target import CardPile, SelfCardTarget, ChooseCardTarget
 from action.action import Action, AddMana
 from action.agent_targeted_action import DealAttackDamage, ApplyStatus, AddBlock, Heal
-from action.card_targeted_action import CardTargetedL1, Exhaust, AddCopy, UpgradeCard
+from action.card_targeted_action import CardTargetedL1, Exhaust, AddCopy, UpgradeCard, DiscardCard
 from config import CardType, Character, Rarity
 from status_effecs import StatusEffectRepo, StatusEffectDefinition
 from value import Value, ConstValue, UpgradableOnce, LinearUpgradable
@@ -46,7 +46,7 @@ class Card:
             for val in action.values:
                 val.upgrade(times)
 
-    def get_name(self):
+    def get_name(self) -> str:
         return "{}{}".format(self.name, "+"*self.upgrade_count)
     
     def __repr__(self) -> str:
@@ -61,11 +61,14 @@ class CardGen:
     Defend = lambda: Card("Defend", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.STARTER, AddBlock(UpgradableOnce(5, 8)).To(SelfAgentTarget()))
     Searing_Blow = lambda: Card("SearingBlow", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.UNCOMMON, DealAttackDamage(LinearUpgradable(12, 4)).To(ChooseAgentTarget(AgentSet.ENEMY)))
     Bash = lambda: Card("Bash", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(8, 10)).And(ApplyStatus(UpgradableOnce(2, 3), StatusEffectRepo.VULNERABLE)).To(ChooseAgentTarget(AgentSet.ENEMY)))
+    BashStar = lambda: Card("Bash", CardType.ATTACK, ConstValue(2), Character.IRON_CLAD, Rarity.STARTER, DealAttackDamage(UpgradableOnce(8, 10)).To(ChooseAgentTarget(AgentSet.ENEMY)).And(ApplyStatus(UpgradableOnce(2, 3), StatusEffectRepo.VULNERABLE).To(ChooseAgentTarget(AgentSet.ENEMY))))
     Anger = lambda: Card("Anger", CardType.ATTACK, ConstValue(0), Character.IRON_CLAD, Rarity.COMMON, DealAttackDamage(UpgradableOnce(6, 8)).To(ChooseAgentTarget(AgentSet.ENEMY)), AddCopy(CardPile.DISCARD).To(SelfCardTarget()))
     # TODO upgrade for Armament
     Armaments = lambda: Card("Armament", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, AddBlock(ConstValue(5)).To(SelfAgentTarget()), UpgradeCard().To(ChooseCardTarget(CardPile.HAND)))
     Cleave = lambda: Card("Cleave", CardType.ATTACK, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealAttackDamage(UpgradableOnce(8, 11)).To(AllAgentsTarget(AgentSet.ENEMY)))
     Impervious = lambda: Card("Impervious", CardType.SKILL, ConstValue(2), Character.IRON_CLAD, Rarity.RARE, AddBlock(UpgradableOnce(30, 40)).To(SelfAgentTarget()), Exhaust().To(SelfCardTarget()))
+    # TODO this doesn't work yet, here for reference
+    Survivor = lambda: Card("Survivor", CardType.SKILL, ConstValue(1), Character.SILENT, Rarity.COMMON, AddBlock(ConstValue(8)).To(SelfAgentTarget()), DiscardCard().To(ChooseCardTarget(CardPile.HAND)))
     # NEW CARDS
     Stimulate = lambda: Card("Stimulate", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, ApplyStatus(ConstValue(4), StatusEffectRepo.VIGOR).To(SelfAgentTarget()))
     Batter = lambda: Card("Batter", CardType.SKILL, ConstValue(1), Character.IRON_CLAD, Rarity.COMMON, DealAttackDamage(ConstValue(0), ConstValue(10)).To(ChooseAgentTarget(AgentSet.ENEMY)))

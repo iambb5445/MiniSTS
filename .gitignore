@@ -2,3 +2,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 evaluation_results/
+*.log
+*.zip
+*.out
+ggpa/mcts_bot.py
+notes.txt
+./auth.py
