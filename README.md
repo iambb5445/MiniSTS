@@ -1,5 +1,22 @@
 # MiniStS
 
+- [MiniStS](#minists)
+  * [Description](#description)
+  * [Slay the Spire](#slay-the-spire)
+    + [Main Game Loop](#main-game-loop)
+    + [Keywords](#keywords)
+  * [MiniStS Structure](#minists-structure)
+    + [Values](#values)
+    + [Actions](#actions)
+    + [Status Effects](#status-effects)
+  * [How to Run](#how-to-run)
+    + [Requirements](#requirements)
+    + [Running MiniStS](#running-minists)
+    + [Creating New Cards](#creating-new-cards)
+      - [Example: Bash](#example--bash)
+      - [Example: AfterImage](#example--afterimage)
+    + [Comparing General Game-playing Bots](#comparing-general-game-playing-bots)
+
 ## Description
 This repository includes a simplified implementation of the core loop of the game *Slay the Spire*. This implementation is introduced with the goal of enabling experimentations with adding new cards and game playing agents. MiniStS is discussed as a testbed for dynamic rule systems in paper "MiniStS: A Testbed for Dynamic Rule Exploration" by Bahar Bateni and Jim Whitehead, published at the 20th AAAI Conference on Artificial Intelligence and Interactive Digital Entertainment (AIIDE), workshop on Experimental AI in Games (EXAG), 2024.
 
@@ -39,10 +56,7 @@ The following are some of the main keywords and concepts used in the game:
 
 * Card Type: Either Attack, Skill or Power. Power cards are played and then removed from that battle, but Attack or Skill cards move to discard pile if they are played. There are also Status or Curse card types, which are mostly unplayable and are designed to disadvantage the player in some way.
 * Block: Until next turn, prevents damage. For example, if the player gains 5 block, and the enemy deals 7 damage to them that turn, the player loses only 2 HP and all their block. The Block only lasts one turn, so if there are any remining Blocks on the enemy or the player, this Block is removed right before they perform their next set of actions.
-* Status Effects: Certain effects can be put on the player or the enemies that can buff or debuff that agent. Each status effect can have a value which, based on what the status effect is, shows either for how many turns that effect is active or how intense the effect is.
-    * Vulnerable: Take 50% more damage from Attack damage. Note that this only applies to damage coming from an Attack type card or an enemy Attack action. The value of the Vulnerable effect shows how many turns it will last.
-    * Weak: Deal 25% less damage with Attacks. Note that this only applies to damage coming from an Attack type card or an enemy Attack action. The value of the Weak effect shows how many turns it will last.
-    * Strength: Adds additional damage to Attacks. Note that this only applies to damage coming from an Attack type card or an enemy Attack action. The value of the Strength effect shows how much additional damage is applied to Attack damage values.
+* Status Effects: Certain effects can be put on the player or the enemies that can buff or debuff that agent. Each status effect can have a value which, based on what the status effect is, shows either for how many turns that effect is active or how intense the effect is. Example effects can be found at [Status Effects](#status-effects).
 * Exhaust: Remove card until end of combat.
 * Ethereal: If an Ethereal card is in player's hand at the end of turn, it is Exhasted.
 * Status Cards: These cards are mostly unplayable and are designed to disadvantage the player in some way.
@@ -51,6 +65,60 @@ The following are some of the main keywords and concepts used in the game:
     * Burn: An unplayable card. If the card is in player's hand at the end of his turn, the player will take 2 damage.
 * Innate: Start each combat with this card in your hand.
 * X cost card: If a card's cost is X, it means that when the card is played, it will consume all the avaialble energy the player has. This number of energy consumed is X, and the effect of the card is often described in terms of X.
+
+## MiniStS Structure
+
+In this section, we discuss various components that create MiniStS. Understanding these components may be required for defining new cards, as some cards require new Actions, new Value types, or new Status Effects to be defined.
+
+### Values
+
+The values object in the game is used to define any values used in card definition or enemy behavior. The values can be defined to be upgradable (be changed to another value when the card is upgraded), or sample a random distribution. The following value types are currently supported in the game:
+
+- ConstValue: A value with a constant amount.
+- UpgradableOnce: A value that can be upgraded at most once to a new amount.
+- LinearUpgradable: A value that can be linearly increased or decreased through upgrading. The value can be upgraded any number of times. (Used for cards such as `Searing Blow`)
+- RandomUniformRange: A value that is sampled randomly from a uniform range. The value is deterministic, and it can be `peek`ed at without changing its internal state.
+
+A new value type can be defined as long it implements a set of functions:
+
+- get: Get the amount of this value. Any random value should be sampled again with this funciton is called.
+- peek: Get the amount of this value without changing its internal state. Any random value should return the same amount whenever it's peeked at, until it's sampled with get.
+- negative: The amount of this value times -1.
+- upgrade: Upgrade the value. Some values do not react to this function in any way.
+
+### Actions
+
+MiniStS uses a set of actions both for enemy behavior and for card effects, such as `DealAttackDamage`, `GainBlock`, `DiscardCard`, `ApplyStatus`. The existing actions are located in the `actions` directory. There are three action types in the game:
+- Actions requiring an agent target (i.e. player or enemy), such as `DealAttackDamage` or `GainBlock` actions.
+- Actions requiring a card target, such as `DiscardCard` or `Exhause` actions.
+- Actions not requiring any targets, such as `DrawCard`or `AddMana` actions.
+
+To define a new action, it should implement the `play` function. The `play` function has the following input arguments:
+- `by`: the agent who have performed this action
+- `game_state`: the state of the game including player's deck, ascention level, etc.
+- `battle_state`: the state of the battle including turn number, enemies, card piles (hand, draw, discard, etc).
+- [only for targeting actions] `target`: the target of this action, which can be an agent or a card based on whether this action is a `AgentTargetedAction` or a `CardTargetedAction`.
+
+### Status Effects
+
+In *Slay the Spire*, status effects can be applied to different agents in the game (i.e. enemies or the player). These status effect have a wide range of possible effects, such as:
+
+* Vulnerable: Take 50% more damage from Attack damage. Note that this only applies to damage coming from an Attack type card or an enemy Attack action. The value of the Vulnerable effect shows how many turns it will last.
+* Weak: Deal 25% less damage with Attacks. Note that this only applies to damage coming from an Attack type card or an enemy Attack action. The value of the Weak effect shows how many turns it will last.
+* Strength: Adds additional damage to Attacks. Note that this only applies to damage coming from an Attack type card or an enemy Attack action. The value of the Strength effect shows how much additional damage is applied to Attack damage values.
+* Intangible: Reduce all damage taken and HP loss to 1 this turn. The value shows how many turns Intangible is applied.
+* Barricade: Block is not removed at the start of the turn.
+* No Draw: You may not draw any more cards this turn.
+* ...
+
+Any status effect should have a definition with the following properties defined:
+
+- `stack`: How does this status effect stacks, if is added multiple times? Some status effects have their value added together when applied multiple times, such as Vulnerable, while some do not stack such as Barricade. For more information, please refer to [Buffs](https://slay-the-spire.fandom.com/wiki/Buffs) and [Debuffs](https://slay-the-spire.fandom.com/wiki/Debuff).
+- `end_turn`: Defines how a status effect is changed at the end of the turn. For example, that status effects for which their value shows how many turns they last, their value is decreased by one at the end of every turn (e.g. Vulnerable). Alternatively, some status effects only last for one turn (e.g. Intangible), or some last forever (Barricade). If the status effect are removed or changed at other trigger points (e.g. Buffer is decreased when the player receives damage), it should be implemented by using triggers.
+- `done`: Defines when the status effect is removed. For example, is it removed when its value reaches zero?
+- `repr`: Is the status effect represented to the player, or is it hidden? The intended use for hidden status effects are when effects in the game are not visualized for the player, such as stances for Watcher character.
+
+After defining a status effect, triggers and events can be defined to apply its effect. Example trigger callbacks can be seen in `status_effects.py`. Some callbacks are applied on a value (e.g. Vulnerable changes the damage amount to a new amount), in which case they receive the current value as input and should return the new value. Others only result in some effect (e.g. AfterImage). Each callback also receives additional information such as the agent who had this status effect, the game state, and so on.
 
 ## How to Run
 
@@ -100,35 +168,6 @@ game_state.add_to_deck(CardGen.Strike(), CardGen.Defend(), CardGen.Defend())
 The cards in MiniStS are defined by combining actions, targets, and status effects.
 
 To create a card, a factory method of that card should be added to `CardRepo` in `card.py`. The rest of this section includes description of different components required to define a card and example card definitions.
-
-#### Values
-
-The values object in the game is used to define any values used in card definition or enemy behavior. The values can be defined to be upgradable (be changed to another value when the card is upgraded), or sample a random distribution. The following value types are currently supported in the game:
-
-- ConstValue: A value with a constant amount.
-- UpgradableOnce: A value that can be upgraded at most once to a new amount.
-- LinearUpgradable: A value that can be linearly increased or decreased through upgrading. The value can be upgraded any number of times. (Used for cards such as `Searing Blow`)
-- RandomUniformRange: A value that is sampled randomly from a uniform range. The value is deterministic, and it can be `peek`ed at without changing its internal state.
-
-A new value type can be defined as long it implements a set of functions:
-
-- get: Get the amount of this value. Any random value should be sampled again with this funciton is called.
-- peek: Get the amount of this value without changing its internal state. Any random value should return the same amount whenever it's peeked at, until it's sampled with get.
-- negative: The amount of this value times -1.
-- upgrade: Upgrade the value. Some values do not react to this function in any way.
-
-#### Actions
-
-MiniStS uses a set of actions both for enemy behavior and for card effects, such as `DealAttackDamage`, `GainBlock`, `DiscardCard`, `ApplyStatus`. The existing actions are located in the `actions` directory. There are three action types in the game:
-- Actions requiring an agent target (i.e. player or enemy), such as `DealAttackDamage` or `GainBlock` actions.
-- Actions requiring a card target, such as `DiscardCard` or `Exhause` actions.
-- Actions not requiring any targets, such as `DrawCard`or `AddMana` actions.
-
-To define a new action, it should implement the `play` function. The `play` function has the following input arguments:
-- `by`: the agent who have performed this action
-- `game_state`: the state of the game including player's deck, ascention level, etc.
-- `battle_state`: the state of the battle including turn number, enemies, card piles (hand, draw, discard, etc).
-- [only for targeting actions] `target`: the target of this action, which can be an agent or a card based on whether this action is a `AgentTargetedAction` or a `CardTargetedAction`.
 
 #### Example: Bash
 
@@ -182,16 +221,7 @@ While many cards in *Slay the Spire* can be implemented using a set of actions (
 
 `AfterImage: Whenever you play a card, gain 1 Block.`
 
-To apply this action, a special effect should be triggered any time a card is played. *Slay the Spire* visualizes these effects as status effects. MiniStS also implemets these type of effects as status effects, and offers an event system to allow for defining and subscribing to specific triggers.
-
-Any status effect should have a definition with the following properties defined:
-
-- `stack`: How does this status effect stacks, if is added multiple times? Some status effects have their value added together when applied multiple times, such as Vulnerable, while some do not stack such as Barricade. For more information, please refer to [Buffs](https://slay-the-spire.fandom.com/wiki/Buffs) and [Debuffs](https://slay-the-spire.fandom.com/wiki/Debuff).
-- `end_turn`: Defines how a status effect is changed at the end of the turn. For example, that status effects for which their value shows how many turns they last, their value is decreased by one at the end of every turn (e.g. Vulnerable). Alternatively, some status effects only last for one turn (e.g. Intangible), or some last forever (Barricade). If the status effect are removed or changed at other trigger points (e.g. Buffer is decreased when the player receives damage), it should be implemented by using triggers.
-- `done`: Defines when the status effect is removed. For example, is it removed when its value reaches zero?
-- `repr`: Is the status effect represented to the player, or is it hidden? The intended use for hidden status effects are when effects in the game are not visualized for the player, such as stances for Watcher character.
-
-After defining an status effect, triggers and events can be defined to apply its effect. Example trigger callbacks can be seen in `status_effects.py`. Some callbacks are applied on a value (e.g. Vulnerable changes the damage amount to a new amount), in which case they receive the current value as input and should return the new value. Others only result in some effect (e.g. AfterImage). Each callback also receives additional information such as the agent who had this status effect, the game state, and so on.
+To apply this action, a special effect should be triggered any time a card is played. *Slay the Spire* visualizes these effects as status effects. MiniStS also implemets these type of effects as status effects, and offers an event system to allow for defining and subscribing to specific triggers. More information on how to implement status effects can be found at [Status Effects](#status-effects).
 
 After implementing the AfterImage status effect, the card can then be defined easily as follows:
 
